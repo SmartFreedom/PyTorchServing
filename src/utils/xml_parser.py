@@ -18,9 +18,9 @@ def get_sort_order(fileid):
         body = body.decode("utf-8")
         body = jd.decode(body)
 
-    return [ 
-        { 'ID': el['id'], 'slice': el['sort_order'] } 
-        for el in body['files'] 
+    return [
+        {'ID': el['id'], 'slice': el['sort_order']}
+        for el in body['files']
     ]
 
 
@@ -44,7 +44,7 @@ def parse_polygon(obj):
         y = point.find('{http://www.w3.org/1999/xhtml}y')
         x, y = x.text, y.text
         coords.extend((int(x), int(y)))
-    return coords#' '.join(coords)
+    return coords  # ' '.join(coords)
 
 
 def compose_dataframe(data, row):
@@ -65,8 +65,8 @@ def parse_xml(row):
         name = parse_name(obj)
 
         data.append({
-            'occluded': occlusion, 
-            'coords': coords, 
+            'occluded': occlusion,
+            'coords': coords,
             'name': name,
         })
     return compose_dataframe(data, row)
@@ -78,7 +78,7 @@ def parse_annotations(annotations):
     for i, row in annotations.iterrows():
         objects = et.fromstring(row.XML)
         data.extend([
-            easydict.EasyDict({ 
+            easydict.EasyDict({
                 'ID': ch.find('fileid').text,
                 'id': obj.find('{http://www.w3.org/1999/xhtml}id').text,
                 'name': obj.find('{http://www.w3.org/1999/xhtml}name').text,
@@ -88,9 +88,9 @@ def parse_annotations(annotations):
                 'coords': parse_polygon(obj),
                 'filename': ch.find('filename').text,
             })
-            for i, ch in enumerate(sorted(list(objects), key=lambda x: int(x.find('fileid').text))) 
+            for i, ch in enumerate(sorted(list(objects), key=lambda x: int(x.find('fileid').text)))
             for obj in ch.findall('{http://www.w3.org/1999/xhtml}object')
-            if ch.findall('private') 
+            if ch.findall('private')
         ])
 
-    return pd.DataFrame([ d for d in data if d])
+    return pd.DataFrame([d for d in data if d])

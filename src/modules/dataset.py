@@ -14,7 +14,6 @@ from torchvision.transforms import ToTensor, Normalize, Compose
 from ..configs import config
 from ..utils import ct_reader as ctr
 
-
 img_transform = Compose([
     ToTensor(),
     Normalize(mean=config.MEAN, std=config.STD)
@@ -28,11 +27,11 @@ class CTDataset(Dataset):
     def __getitem__(self, idx):
         image = self.scan[idx]
 
-        data = { "image": image }
+        data = {"image": image}
         if self.transform is not None:
             data = self.transform(data)
         data.update({
-            "idx": idx ,
+            "idx": idx,
             "fileid": self.names[idx]
         })
         return self.postprocess(**data)
@@ -45,7 +44,7 @@ class CTDataset(Dataset):
 
     def preprocess(self, image, lungs=None):
         image += 1024
-        image = 255. * np.clip(image, 0, 500) / 500. # -> [0-255]
+        image = 255. * np.clip(image, 0, 500) / 500.  # -> [0-255]
         if lungs is not None:
             image[lungs == 0] = config.MEAN
         return image
@@ -56,4 +55,3 @@ class CTDataset(Dataset):
 
     def __len__(self):
         return len(self.scan)
-

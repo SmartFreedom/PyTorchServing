@@ -7,7 +7,6 @@ import re
 
 from ..configs import config
 
-
 pattern = re.compile(r'^[\sa-zA-Z_0]*([0-9]+)\.dcm')
 
 
@@ -50,10 +49,10 @@ def get_polygon(scan, annot, idxs):
             predicat = False
 
     idx = idxs.index(slice_)
-    mask = polygon2mask(scan.shape[1:], 
-        coords[1::2] + coords[1:2],
-        coords[::2] + coords[:1]
-    )
+    mask = polygon2mask(scan.shape[1:],
+                        coords[1::2] + coords[1:2],
+                        coords[::2] + coords[:1]
+                        )
     if predicat:
         mask[coords[1], coords[0]] = 1
         return scipy.ndimage.binary_dilation(mask, iterations=10), idx
@@ -65,7 +64,7 @@ def save_mask(mask, names, case):
     names = [names[i][:-4] + ".png" for i in idxs]
     for idx, name in zip(idxs, names):
         try:
-            os.mkdir(config.PATHS.MASKS/case)
+            os.mkdir(config.PATHS.MASKS / case)
         except:
             pass
-        cv2.imwrite(str(config.PATHS.MASKS/case/name), mask[idx].astype(np.uint8))
+        cv2.imwrite(str(config.PATHS.MASKS / case / name), mask[idx].astype(np.uint8))

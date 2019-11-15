@@ -17,7 +17,6 @@ torch.cuda.set_device(config.CUDA_IDX)
 models = Models()
 preprocess = Preprocess()
 
-
 # set flask params
 app = Flask(__name__)
 
@@ -41,6 +40,7 @@ def predict():
     app.logger.info("Execution time: %0.02f seconds" % (dt))
 
     return jsonify(results.__str__())
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", debug=True, port=config.API.PORT)

@@ -489,7 +489,7 @@ def lungs_postprocessing(lungs_seeds):
     """
     for i in range(lungs_seeds.shape[1]):
         lungs_seeds[:, i] = scipy.ndimage.morphology.binary_fill_holes(lungs_seeds[:, i])
-    
+
     selem = skimage.morphology.disk(int((lungs_seeds.sum((1, 2)) ** .5).max() * .05))
     for i, el in enumerate(lungs_seeds):
         lungs_seeds[i] = skimage.morphology.binary_closing(el, selem)
@@ -674,17 +674,17 @@ def improved_lung_segmentation(patient):
 
 def save_lungs_mask(mask, names, case):
     try:
-        os.mkdir(config.PATHS.LMASKS/case)
+        os.mkdir(config.PATHS.LMASKS / case)
     except:
         pass
     for idx, name in enumerate(names):
         name = name[:-4] + ".png"
-        cv2.imwrite(str(config.PATHS.LMASKS/case/name), mask[idx].astype(np.uint8))
+        cv2.imwrite(str(config.PATHS.LMASKS / case / name), mask[idx].astype(np.uint8))
 
 
 def load_lungs_mask(names, case):
     mask = list()
     for idx, name in enumerate(names):
         name = name[:-4] + ".png"
-        mask.append(cv2.imread(str(config.PATHS.LMASKS/case/name), 0))
+        mask.append(cv2.imread(str(config.PATHS.LMASKS / case / name), 0))
     return np.array(mask)

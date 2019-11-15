@@ -17,7 +17,7 @@ class Models:
                     'num_classes': 1,
                     'is_deconv': False
                 },
-            'RetinaNet': {}
+                'RetinaNet': {}
             },
         }
         self.collection = dict()
@@ -27,7 +27,7 @@ class Models:
 
         model = self.model_init[item]['model'](**self.model_init[item]['kwargs'])
         model = lrn.to_single_channel(model)
-        checkpoint = config.PATHS.MODELS/item/config.MODELS[item]
+        checkpoint = config.PATHS.MODELS / item / config.MODELS[item]
         model = lrn.get_model(model, checkpoint=checkpoint, devices=config.DEVICES)
         return lrn.Inference(model)
 
@@ -39,7 +39,8 @@ class Models:
         print('{} model has been created!'.format(item))
         return self.collection[item]
 
-#TODO: refactor as Models class
+
+# TODO: refactor as Models class
 class Preprocess:
     def __init__(self):
         self.dataset = ds.CTDataset()

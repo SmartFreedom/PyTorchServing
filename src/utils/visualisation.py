@@ -13,6 +13,7 @@ def make_image_row(image, subax):
     subax[3].axis('off')
     return subax
 
+
 def make_image_rows(image, subax, title=None):
     assert len(image) == len(subax)
 

@@ -78,7 +78,7 @@ def dice_loss(true, logits, eps=1e-7):
     intersection = torch.sum(probas * true_1_hot, dims)
     cardinality = torch.sum(probas + true_1_hot, dims)
     dice_loss = (2. * intersection / (cardinality + eps)).mean()
-    return -torch.log(dice_loss) #(1 - dice_loss)
+    return -torch.log(dice_loss)  # (1 - dice_loss)
 
 
 def jaccard_loss(true, logits, eps=1e-7):

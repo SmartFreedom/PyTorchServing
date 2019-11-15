@@ -8,11 +8,10 @@ STD = [60.05609845525738]
 DEVICES = [0]
 
 PATHS = easydict.EasyDict()
-PATHS.DATA_ROOT = Path(os.getcwd())/'data'
-PATHS.MODELS = PATHS.DATA_ROOT/'models'
-PATHS.RESULTS = PATHS.DATA_ROOT/'results'
-PATHS.LOGDIR = PATHS.DATA_ROOT/'logdir'
-
+PATHS.DATA_ROOT = Path(os.getcwd()) / 'data'
+PATHS.MODELS = PATHS.DATA_ROOT / 'models'
+PATHS.RESULTS = PATHS.DATA_ROOT / 'results'
+PATHS.LOGDIR = PATHS.DATA_ROOT / 'logdir'
 
 # set the URL where you can download your model weights
 MODELS = {
@@ -23,7 +22,6 @@ BATCH_SIZE = 8
 
 CUDA_VISIBLE_DEVICES = "1"
 CUDA_IDX = 0
-
 
 # set some deployment settings
 API = easydict.EasyDict()

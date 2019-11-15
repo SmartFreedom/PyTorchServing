@@ -42,8 +42,8 @@ def read_ct_scan(path, verbose=False):
                     print('Neither a DICOM nor a MHD file: %s' % filename)
 
         slices.sort(key=lambda x: int(x[1].InstanceNumber))
-        names = [ s[0] for s in slices ]
-        slices = [ s[1] for s in slices ]
+        names = [s[0] for s in slices]
+        slices = [s[1] for s in slices]
 
         try:
             slice_thickness = abs(slices[0].ImagePositionPatient[2] - slices[1].ImagePositionPatient[2])
@@ -57,10 +57,10 @@ def read_ct_scan(path, verbose=False):
 
 
 def extract_array(ct_scan):
-        heights = asarray([int(ct_slice.SliceLocation)for ct_slice in ct_scan])
-        ct_scan = stack([ct_slice.pixel_array for ct_slice in ct_scan])
-        ct_scan[ct_scan == ct_scan.min()] = 0
-        return ct_scan, heights
+    heights = asarray([int(ct_slice.SliceLocation) for ct_slice in ct_scan])
+    ct_scan = stack([ct_slice.pixel_array for ct_slice in ct_scan])
+    ct_scan[ct_scan == ct_scan.min()] = 0
+    return ct_scan, heights
 
 
 def get_pixels_hu(slices):
@@ -75,7 +75,6 @@ def get_pixels_hu(slices):
     # Set outside-of-scan pixels to 0
     # The intercept is usually -1024, so air is approximately 0
     image[image == image.min()] = 0
-
 
     # Convert to Hounsfield units (HU)
     for slice_number in range(len(slices)):

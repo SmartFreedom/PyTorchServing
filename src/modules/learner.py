@@ -6,7 +6,7 @@ def get_model(model, checkpoint=None, map_location=None, devices=None):
     model.cuda()
 
     if checkpoint is not None:
-        sd = torch.load(checkpoint, map_location) #.module.state_dict()
+        sd = torch.load(checkpoint, map_location)  # .module.state_dict()
         msd = model.state_dict()
         sd = {k: v for k, v in sd.items() if k in msd}
         print('Overlapped keys: {}'.format(len(sd.keys())))
@@ -38,8 +38,8 @@ def freeze(model, unfreeze=False):
     elif hasattr(model, 'parameters'):
         for param in model.parameters():
             param.requires_grad = unfreeze
-            
-            
+
+
 def unfreeze_bn(model):
     predicat = isinstance(model, torch.nn.BatchNorm2d)
     predicat |= isinstance(model, bn.ABN)
@@ -88,6 +88,6 @@ class Inference:
 
     @staticmethod
     def _format_output(prediction, data):
-        results = { k: v.data.cpu() if torch.is_tensor(v) else v for k, v in data.items() if k != 'image' }
-        results.update({ 'prediction': prediction.data.cpu() if torch.is_tensor(prediction) else prediction })
+        results = {k: v.data.cpu() if torch.is_tensor(v) else v for k, v in data.items() if k != 'image'}
+        results.update({'prediction': prediction.data.cpu() if torch.is_tensor(prediction) else prediction})
         return results
