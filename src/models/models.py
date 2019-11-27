@@ -50,8 +50,8 @@ class Preprocess:
         names, dscan = ctr.read_ct_scan(inpt)
         scan = ctr.get_pixels_hu(dscan)
 
-        lungs, lung_left, lung_right, trachea = lsg.improved_lung_segmentation(scan)
-        segmentation = np.max([3 * lung_left, 2 * lung_right, 1 * trachea], axis=0)
-        self.dataset.populate(names, scan, segmentation)
+        # lungs, lung_left, lung_right, trachea = lsg.improved_lung_segmentation(scan)
+        # segmentation = np.max([3 * lung_left, 2 * lung_right, 1 * trachea], axis=0)
+        self.dataset.populate(names, scan, None)#segmentation)
         return ds.DataLoader(self.dataset, batch_size=config.BATCH_SIZE)
         # lsg.save_lungs_mask(segmentation, names, case)
