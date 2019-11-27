@@ -1,5 +1,7 @@
 import torch
 from tqdm import tqdm
+import numpy as np
+from collections import defaultdict
 
 
 def get_model(model, checkpoint=None, map_location=None, devices=None):
@@ -71,11 +73,12 @@ class Inference:
     def validate(self, datagen):
         torch.cuda.empty_cache()
         self.model.eval()
-        meters = list()
+        meters = defaultdict(list)
         with torch.no_grad():
             for data in tqdm(datagen.dataset):
-                meters.append(self.make_step(data, training=False))
-        return meters
+                data = self.make_step(data, training=False)
+                meters = self._format_meters(meters, data)
+        return self._meters_to_array(meters)
 
     @staticmethod
     def _format_input(data):
@@ -91,3 +94,17 @@ class Inference:
         results = {k: v.data.cpu() if torch.is_tensor(v) else v for k, v in data.items() if k != 'image'}
         results.update({'prediction': prediction.data.cpu() if torch.is_tensor(prediction) else prediction})
         return results
+
+    @staticmethod
+    def _format_meters(meters, data):
+        for k, v in data.items():
+            if torch.is_tensor(v):
+                v = v.data.cpu().numpy()
+            meters[k].append(v)
+        return meters
+
+    @staticmethod
+    def _meters_to_array(meters):
+        for k, v in meters.items():
+            meters[k] = np.array(v)
+        return meters
