@@ -1,0 +1,6 @@
+import easydict
+
+PARAMS = easydict.EasyDict()
+PARAMS.MEAN = [90.2751662940309]
+PARAMS.STD = [60.05609845525738]
+

@@ -2,8 +2,11 @@ from pathlib import Path
 import os
 import easydict
 
-MEAN = [90.2751662940309]
-STD = [60.05609845525738]
+from src.configs import ct_config, mammography_config
+
+
+CT_PARAMS = ct_config.PARAMS.copy()
+MAMMOGRAPHY_PARAMS = mammography_config.PARAMS.copy()
 
 DEVICES = [0]
 
@@ -15,7 +18,8 @@ PATHS.LOGDIR = PATHS.DATA_ROOT / 'logdir'
 
 # set the URL where you can download your model weights
 MODELS = {
-    'AlbuNet': 'latest.pkl'
+    'AlbuNet/RetinaNet': 'latest.pkl',
+    'AlbuNet/UNet': 'albunet18_fold_4_best.pth',
 }
 
 BATCH_SIZE = 8
