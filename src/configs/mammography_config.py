@@ -1,8 +1,22 @@
 import easydict
 
+from src.models.albunet import AlbuNet
+
 PARAMS = easydict.EasyDict()
 PARAMS.MEAN = [74.77618355029848]
 PARAMS.STD = [31.738553261533994]
+
+MODELS = {
+    'AlbuNet/UNet': {
+        'model': AlbuNet,
+        'kwargs': {
+            'num_classes': 1,
+            'is_deconv': True,
+            'dropout': .2,
+        },
+        'path': 'albunet18_fold_4_best.pth',
+    }
+}
 
 PARAMS.CROP_SIDE = 1024
 PARAMS.CNN_SIDE = 512

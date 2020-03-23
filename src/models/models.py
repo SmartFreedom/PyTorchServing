@@ -1,7 +1,6 @@
 from src.modules import lungs_segmentation as lsg
 from src.modules import learner as lrn
 from src.modules import dataset as ds
-from src.models.unet import TernausNet
 from src.utils import ct_reader as ctr
 from src.configs import config
 
@@ -10,24 +9,14 @@ import numpy as np
 
 class Models:
     def __init__(self):
-        self.model_init = {
-            'AlbuNet': {
-                'model': TernausNet.AlbuNet,
-                'kwargs': {
-                    'num_classes': 1,
-                    'is_deconv': False
-                },
-                'RetinaNet': {}
-            },
-        }
         self.collection = dict()
 
-    def get_model(self, item, version=None):
+    def get_model(self, item: str, version=None):
         assert item in config.MODELS
 
-        model = self.model_init[item]['model'](**self.model_init[item]['kwargs'])
+        model = config.MODELS[item]['model'](**config.MODELS[item]['kwargs'])
         model = lrn.to_single_channel(model)
-        checkpoint = config.PATHS.MODELS / item / config.MODELS[item]
+        checkpoint = config.PATHS.MODELS / item / config.MODELS[item]['path']
         model = lrn.get_model(model, checkpoint=checkpoint, devices=config.DEVICES)
         return lrn.Inference(model)
 
