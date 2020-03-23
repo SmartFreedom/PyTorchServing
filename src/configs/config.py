@@ -5,8 +5,8 @@ import easydict
 from src.configs import ct_config, mammography_config
 
 
-CT_PARAMS = ct_config.PARAMS.copy()
-MAMMOGRAPHY_PARAMS = mammography_config.PARAMS.copy()
+CT_PARAMS = easydict.EasyDict(ct_config.PARAMS.copy())
+MAMMOGRAPHY_PARAMS = easydict.EasyDict(mammography_config.PARAMS.copy())
 
 DEVICES = [0]
 
@@ -23,7 +23,7 @@ MODELS.update(mammography_config.MODELS)
 
 BATCH_SIZE = 8
 
-CUDA_VISIBLE_DEVICES = "1"
+CUDA_VISIBLE_DEVICES = "0"
 CUDA_IDX = 0
 
 # set some deployment settings
