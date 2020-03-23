@@ -17,10 +17,9 @@ PATHS.RESULTS = PATHS.DATA_ROOT / 'results'
 PATHS.LOGDIR = PATHS.DATA_ROOT / 'logdir'
 
 # set the URL where you can download your model weights
-MODELS = {
-    'AlbuNet/RetinaNet': 'latest.pkl',
-    'AlbuNet/UNet': 'albunet18_fold_4_best.pth',
-}
+MODELS = dict()
+MODELS.update(ct_config.MODELS)
+MODELS.update(mammography_config.MODELS)
 
 BATCH_SIZE = 8
 
@@ -32,4 +31,4 @@ API = easydict.EasyDict()
 API.ROOT = 'https://label.cmai.tech'
 API.CASES = API.ROOT + '/api/v1/cases'
 API.KEY = 'jMTCJiJNETMDpwystkl25dFgPbDVpmiSl0Cx6k5pZ7xcUNKu4hbLOpo2UWgIOq8ZBZ7U5Q1djTsyPdmoekNAU3RqhP2kMhp8A5Ef80YDLIchZOGNi77rUrsdlTatwEva'
-API.PORT = 8899
+API.PORT = 9769
