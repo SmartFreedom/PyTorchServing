@@ -11,12 +11,12 @@ RUN apt-get update && apt-get install -y \
  && rm -rf /var/lib/apt/lists/*
 
 # Create a working directory
-RUN mkdir /app
-WORKDIR /app
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
 
 # Create a non-root user and switch to it
 RUN adduser --disabled-password --gecos '' --shell /bin/bash user \
- && chown -R user:user /app
+ && chown -R user:user /usr/src/app
 RUN echo "user ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/90-user
 USER user
 
@@ -72,5 +72,27 @@ RUN sudo apt-get update && sudo apt-get install -y --no-install-recommends \
 RUN conda install -y -c menpo opencv3=3.1.0 \
  && conda clean -ya
 
-# Set the default command to python3
-CMD ["python3"]
+# Install wget & make
+RUN sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+    wget \
+    build-essential  \
+ && sudo rm -rf /var/lib/apt/lists/*
+
+# Install Redis
+RUN cd ~ && wget http://download.redis.io/redis-stable.tar.gz \
+ && tar xvzf redis-stable.tar.gz \
+ && cd redis-stable \
+ && make && cd ~ \
+ && rm redis-stable.tar.gz
+
+COPY . ~/
+
+# Set the default command to launch redis & torch server
+EXPOSE 8888 6006 22 9358
+ENTRYPOINT /bin/bash
+
+# CMD ["-D"]
+# ENTRYPOINT
+#  nohup redis-server --port 9358 > redis.log 2>&1 &
+#  && cd ~/PyTorchServer \
+#  && nohup python server.py > torch.log 2>&1 &
