@@ -1,4 +1,4 @@
-FROM nvidia/cuda:10.1-base-ubuntu16.04
+FROM nvidia/cuda:9.0-base-ubuntu16.04
 
 # Install some basic utilities
 RUN apt-get update && apt-get install -y \
@@ -11,12 +11,12 @@ RUN apt-get update && apt-get install -y \
  && rm -rf /var/lib/apt/lists/*
 
 # Create a working directory
-RUN mkdir -p /usr/src/app
-WORKDIR /usr/src/app
+RUN mkdir -p /opt/entrypoint
+WORKDIR /opt/entrypoint
 
 # Create a non-root user and switch to it
 RUN adduser --disabled-password --gecos '' --shell /bin/bash user \
- && chown -R user:user /usr/src/app
+ && chown -R user:user /opt/entrypoint
 RUN echo "user ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/90-user
 USER user
 
@@ -41,36 +41,36 @@ ENV PATH=$CONDA_PREFIX/bin:$PATH
 RUN /home/user/miniconda/bin/conda install conda-build=3.18.9=py36_3 \
  && /home/user/miniconda/bin/conda clean -ya
 
-# CUDA 10.1-specific steps
-RUN conda install -y -c pytorch \
-    cudatoolkit=10.1 \
-    "pytorch=1.4.0=py3.6_cuda10.1.243_cudnn7.6.3_0" \
-    "torchvision=0.5.0=py36_cu101" \
- && conda clean -ya
+# # CUDA 10.1-specific steps
+# RUN conda install -y -c pytorch \
+#     cudatoolkit=10.1 \
+#     "pytorch=1.4.0=py3.6_cuda10.1.243_cudnn7.6.3_0" \
+#     "torchvision=0.5.0=py36_cu101" \
+#  && conda clean -ya
 
-# Install HDF5 Python bindings
-RUN conda install -y h5py=2.8.0 \
- && conda clean -ya
-RUN pip install h5py-cache==1.0
+# # Install HDF5 Python bindings
+# RUN conda install -y h5py=2.8.0 \
+#  && conda clean -ya
+# RUN pip install h5py-cache==1.0
 
-# Install Torchnet, a high-level framework for PyTorch
-RUN pip install torchnet==0.0.4
+# # Install Torchnet, a high-level framework for PyTorch
+# RUN pip install torchnet==0.0.4
 
 # Install Requests, a Python library for making HTTP requests
-RUN conda install -y requests=2.19.1 \
- && conda clean -ya
+# RUN conda install -y requests=2.19.1 \
+#  && conda clean -ya
 
 # Install Graphviz
-RUN conda install -y graphviz=2.40.1 python-graphviz=0.8.4 \
- && conda clean -ya
+# RUN conda install -y graphviz=2.40.1 python-graphviz=0.8.4 \
+#  && conda clean -ya
 
 # Install OpenCV3 Python bindings
-RUN sudo apt-get update && sudo apt-get install -y --no-install-recommends \
-    libgtk2.0-0 \
-    libcanberra-gtk-module \
- && sudo rm -rf /var/lib/apt/lists/*
-RUN conda install -y -c menpo opencv3=3.1.0 \
- && conda clean -ya
+# RUN sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+#     libgtk2.0-0 \
+#     libcanberra-gtk-module \
+#  && sudo rm -rf /var/lib/apt/lists/*
+# RUN conda install -y -c menpo opencv3=3.1.0 \
+#  && conda clean -ya
 
 # Install wget & make
 RUN sudo apt-get update && sudo apt-get install -y --no-install-recommends \
@@ -79,20 +79,23 @@ RUN sudo apt-get update && sudo apt-get install -y --no-install-recommends \
  && sudo rm -rf /var/lib/apt/lists/*
 
 # Install Redis
-RUN cd ~ && wget http://download.redis.io/redis-stable.tar.gz \
+RUN cd $HOME && wget http://download.redis.io/redis-stable.tar.gz \
  && tar xvzf redis-stable.tar.gz \
  && cd redis-stable \
- && make && cd ~ \
+ && make && sudo make install \
+ && cd $HOME \
  && rm redis-stable.tar.gz
 
-COPY . ~/
+# Copy repository and data
+ADD . /opt/entrypoint/
+
+# Create an environment
+RUN conda env create -f /opt/entrypoint/environment.yml
+RUN echo "source activate $(head -1 /opt/entrypoint/environment.yml | cut -d' ' -f2)" > ~/.bashrc
+ENV PATH /opt/conda/envs/$(head -1 /opt/entrypoint/environment.yml | cut -d' ' -f2)/bin:$PATH
 
 # Set the default command to launch redis & torch server
-EXPOSE 8888 6006 22 9358
-ENTRYPOINT /bin/bash
+EXPOSE 8888 6006 22 9358 9769
+# ENTRYPOINT /bin/bash
 
-# CMD ["-D"]
-# ENTRYPOINT
-#  nohup redis-server --port 9358 > redis.log 2>&1 &
-#  && cd ~/PyTorchServer \
-#  && nohup python server.py > torch.log 2>&1 &
+ENTRYPOINT /bin/bash init.sh
