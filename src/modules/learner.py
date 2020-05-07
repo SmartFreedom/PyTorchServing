@@ -1,6 +1,8 @@
 import torch
-from tqdm import tqdm
+from torch import nn
+
 import numpy as np
+from tqdm import tqdm
 from collections import defaultdict
 
 
@@ -22,13 +24,40 @@ def get_model(model, checkpoint=None, map_location=None, devices=None):
 
 
 def to_single_channel(model):
-    conv1 = torch.nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-    nstd = dict()
-    for key, param in model.conv1[0].state_dict().items():
-        nstd[key] = param.sum(1).unsqueeze(1)
-        print('Summed over: {}'.format(key))
+    try:
+        return albunet_to_single_channel(model)
+    except:
+        pass
+    try:
+        return resnet_to_single_channel(model)
+    except:
+        raise('Error')
+
+
+def resnet_to_single_channel(model):
+    conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+    nstd = {
+        key: param.sum(1).unsqueeze(1)
+        for key, param in model.conv1.state_dict().items()
+    }
+    print('Summed over: {}'.format(' | '.join(nstd.keys())))
+
+    conv1.load_state_dict(nstd)
+    model.conv1 = conv1
+    return model
+
+
+def albunet_to_single_channel(model):
+    conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+    nstd = {
+        key: param.sum(1).unsqueeze(1)
+        for key, param in model.conv1[0].state_dict().items()
+    }
+    print('Summed over: {}'.format(' | '.join(nstd.keys())))
+
     conv1.load_state_dict(nstd)
     model.conv1[0] = conv1
+    model.encoder.conv1 = model.conv1[0]
     return model
 
 

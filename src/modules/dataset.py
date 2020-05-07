@@ -1,28 +1,20 @@
 import os
 import cv2
 import numpy as np
-import pandas as pd
-import sklearn.model_selection
-import skimage
-from glob import glob
+import easydict
 
 import torch
-from torch.utils.data.sampler import Sampler
 from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import ToTensor, Normalize, Compose
 
 from ..configs import config
-from ..utils import ct_reader as ctr
-
-img_transform = Compose([
-    ToTensor(),
-    Normalize(mean=config.MEAN, std=config.STD)
-])
 
 
-class CTDataset(Dataset):
+class TDataset(Dataset):
     def __init__(self, augmentations=None):
         self.transform = augmentations
+        self.scan = list()
+        self.names = list()
 
     def __getitem__(self, idx):
         image = self.scan[idx]
@@ -36,22 +28,61 @@ class CTDataset(Dataset):
         })
         return self.postprocess(**data)
 
-    def postprocess(self, image, **kwargs):
-        kwargs.update({
-            'image': img_transform(image.astype(np.uint8)),
-        })
-        return kwargs
+    def postprocess(self, **kwargs):
+        pass
 
-    def preprocess(self, image, lungs=None):
-        image += 1024
-        image = 255. * np.clip(image, 0, 500) / 500.  # -> [0-255]
-        if lungs is not None:
-            image[lungs == 0] = config.MEAN
-        return image
+    def preprocess(self, **kwargs):
+        pass
 
-    def populate(self, names, scan, lungs_mask=None):
-        self.scan = self.preprocess(scan, lungs_mask)
+    def populate(self, names, **kwargs):
+        # **kwargs == lungs_mask=None
+        self.scan = self.preprocess(**kwargs)
         self.names = names
 
     def __len__(self):
         return len(self.scan)
+
+
+class CTDataset(TDataset):
+    def __init__(self, augmentations=None):
+        super().__init__(augmentations)
+        self.to_tensor = Compose([
+            ToTensor(),
+            Normalize(
+                mean=config.CT_PARAMS.MEAN,
+                std=config.CT_PARAMS.STD
+            )
+        ])
+
+    def postprocess(self, **kwargs):
+        kwargs.update({
+            'image': self.to_tensor(kwargs['image'].astype(np.uint8)),
+        })
+        return kwargs
+
+    def preprocess(self, scan, lungs=None):
+        scan += 1024
+        scan = 255. * np.clip(scan, 0, 500) / 500.  # -> [0-255]
+        if lungs is not None:
+            scan[lungs == 0] = config.CT_PARAMS.MEAN
+        return scan
+
+
+class MammographyDataset(TDataset):
+    def __init__(self, augmentations=None):
+        super().__init__(augmentations)
+        self.to_tensor = Compose([
+            ToTensor(),
+            Normalize(
+                mean=config.MAMMOGRAPHY_PARAMS.MEAN,
+                std=config.MAMMOGRAPHY_PARAMS.STD
+            )
+        ])
+
+    def postprocess(self, **kwargs):
+        kwargs = easydict.EasyDict(kwargs)
+        kwargs.image = self.to_tensor(np.expand_dims(kwargs['image'], -1))
+        return kwargs
+
+    def load_image(self, fileid):
+        return cv2.imread(os.path.join(self.root, fileid), 0)
