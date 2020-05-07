@@ -1,6 +1,6 @@
 from src.models.models import Models, Preprocess
 from src.configs import config
-import utils
+from src.utils import utils
 
 import torch
 import os
