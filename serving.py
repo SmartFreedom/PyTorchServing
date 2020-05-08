@@ -4,5 +4,7 @@ from src.api import redis
 
 if __name__ == '__main__':
     config.SHARED.INIT()
-    redis.redis_check()
+    r_api = redis.RedisAPI()
+    r_api.redis_check()
+    r_api.listen()
     flask.app.run(host="0.0.0.0", debug=config.API.DEBUG, port=config.API.PORT)

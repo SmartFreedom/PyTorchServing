@@ -14,4 +14,5 @@ API.REDIS.HOST = '10.20.12.13'
 API.REDIS.PORT = 6379
 API.REDIS.DB = 3
 API.REDIS.CHANNEL = 'requests.mammography_screening.*'
+API.REDIS.CHANNEL = 'analyse_result.{case_id}'
 API.REDIS.START = 1
