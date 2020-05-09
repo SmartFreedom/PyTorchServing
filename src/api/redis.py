@@ -43,5 +43,4 @@ class RedisAPI:
             if message:
                 message = self.jd.decode(message['data'].decode())
                 data = { k: imageio.imread(v) for k, v in message['urls'].items() }
-                print(message)
             time.sleep(1)
