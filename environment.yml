@@ -14,11 +14,11 @@ dependencies:
   - blas=1.0=mkl
   - bleach=3.1.0=py37_0
   - bzip2=1.0.6=h14c3975_5
-  - ca-certificates=2019.3.9=hecc5488_0
+  - ca-certificates=2020.1.1=0
   - cairo=1.14.12=h8948797_3
-  - certifi=2019.3.9=py37_0
+  - certifi=2020.4.5.1=py37_0
   - cffi=1.12.2=py37h2e261b9_1
-  - cudatoolkit=9.0=h13b8566_0
+  - cudatoolkit=10.2.89=hfd86e86_1
   - cycler=0.10.0=py37_0
   - dbus=1.13.6=h746ee38_0
   - decorator=4.4.0=py37_1
@@ -101,7 +101,7 @@ dependencies:
   - olefile=0.46=py37_0
   - opencv=3.4.2=py37h6fd60c2_1
   - openh264=1.8.0=hdbcaa40_1000
-  - openssl=1.1.1b=h7b6447c_1
+  - openssl=1.1.1g=h7b6447c_0
   - pandas=0.24.2=py37he6710b0_0
   - pandoc=2.7.2=0
   - pandocfilters=1.4.2=py37_1
@@ -126,7 +126,7 @@ dependencies:
   - pyrsistent=0.14.11=py37h7b6447c_0
   - python=3.7.3=h0371630_0
   - python-dateutil=2.8.0=py37_0
-  - pytorch=1.0.1=py3.7_cuda9.0.176_cudnn7.4.2_2
+  - pytorch=1.5.0=py3.7_cuda10.2.89_cudnn7.6.5_0
   - pytz=2018.9=py37_0
   - pyzmq=18.0.1=py37h0e1adb2_0
   - qt=5.6.3=h8bf5577_3
@@ -144,7 +144,7 @@ dependencies:
   - terminado=0.8.2=py37_0
   - testpath=0.4.2=py37_0
   - tk=8.6.9=hed695b0_1003
-  - torchvision=0.2.2=py_3
+  - torchvision=0.6.0=py37_cu102
   - tornado=6.0.2=py37h7b6447c_0
   - tqdm=4.31.1=py37_1
   - traitlets=4.3.2=py37_0
@@ -182,9 +182,10 @@ dependencies:
     - networkx==2.4
     - opencv-python-headless==4.2.0.32
     - pywavelets==1.1.1
+    - redis==3.5.1
     - requests==2.23.0
     - scikit-image==0.16.2
     - urllib3==1.25.8
     - werkzeug==1.0.0
-prefix: /data/home/a.dobrenkii/distr/conda/envs/crt
+prefix: /home/user/miniconda/envs/py36/envs/crt
 
