@@ -1,4 +1,7 @@
-FROM nvidia/cuda:10.2-base-ubuntu16.04
+FROM nvidia/cuda:9.0-base-ubuntu16.04
+
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends apt-utils
 
 # Install some basic utilities
 RUN apt-get update && apt-get install -y \
@@ -25,21 +28,21 @@ ENV HOME=/home/user
 RUN chmod 777 /home/user
 
 # Install Miniconda
-RUN curl -so ~/miniconda.sh https://repo.continuum.io/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh \
- && chmod +x ~/miniconda.sh \
- && ~/miniconda.sh -b -p ~/miniconda \
- && rm ~/miniconda.sh
-ENV PATH=/home/user/miniconda/bin:$PATH
+RUN curl 'https://repo.anaconda.com/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh' --output $HOME/conda.sh \
+ && chmod +x $HOME/conda.sh \
+ && $HOME/conda.sh -b -p $HOME/conda \
+ && rm $HOME/conda.sh
+ENV PATH=$HOME/conda/bin:$PATH
 ENV CONDA_AUTO_UPDATE_CONDA=false
 
 # Create a Python 3.6 environment
-RUN /home/user/miniconda/bin/conda create -y --name py36 python=3.6.9 \
- && /home/user/miniconda/bin/conda clean -ya
+RUN $HOME/conda/bin/conda create -y --name py36 python=3.6.9 \
+ && $HOME/conda/bin/conda clean -ya
 ENV CONDA_DEFAULT_ENV=py36
-ENV CONDA_PREFIX=/home/user/miniconda/envs/$CONDA_DEFAULT_ENV
+ENV CONDA_PREFIX=$HOME/conda/envs/$CONDA_DEFAULT_ENV
 ENV PATH=$CONDA_PREFIX/bin:$PATH
-RUN /home/user/miniconda/bin/conda install conda-build=3.18.9=py36_3 \
- && /home/user/miniconda/bin/conda clean -ya
+RUN $HOME/conda/bin/conda install conda-build=3.18.9=py36_3 \
+ && $HOME/conda/bin/conda clean -ya
 
 # Install wget & make
 RUN sudo apt-get update && sudo apt-get install -y --no-install-recommends \
@@ -62,6 +65,8 @@ ADD . /opt/entrypoint/
 RUN conda env create -f /opt/entrypoint/environment.yml
 RUN echo "source activate $(head -1 /opt/entrypoint/environment.yml | cut -d' ' -f2)" > ~/.bashrc
 ENV PATH /opt/conda/envs/$(head -1 /opt/entrypoint/environment.yml | cut -d' ' -f2)/bin:$PATH
+
+ENV DEBIAN_FRONTEND teletype
 
 # Set the default command to launch redis & torch server
 EXPOSE 8888 6006 22 9358 9769
