@@ -8,8 +8,8 @@ from src.configs import config
 
 
 class RedisAPI:
-    def __init__(self, queue=None):
-        self.queue = queue
+    def __init__(self, manager: QueueManager):
+        self.manager = manager
         self.jd = json.JSONDecoder()
         self.r_connector = redis.StrictRedis(
             host=config.API.REDIS.HOST,
@@ -39,8 +39,17 @@ class RedisAPI:
 
     def listen(self):
         while True:
+
+            time.sleep(1)
+#             if len(self.queue) >= config.MAX_QUEUE_LENGTH:
+#                 continue
+
             message = self.subscriber.get_message()
             if message:
+                print(message)
+                channel = message['channel']
                 message = self.jd.decode(message['data'].decode())
-                data = { k: imageio.imread(v) for k, v in message['urls'].items() }
-            time.sleep(1)
+                self.manager.process(channel, data={
+                    k: imageio.imread(v)
+                    for k, v in message['urls'].items()
+                })
