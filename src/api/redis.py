@@ -4,11 +4,12 @@ import traceback
 import imageio
 import json
 
+from src.api import queue_manager as qm
 from src.configs import config
 
 
 class RedisAPI:
-    def __init__(self, manager: QueueManager):
+    def __init__(self, manager: qm.QueueManager):
         self.manager = manager
         self.jd = json.JSONDecoder()
         self.r_connector = redis.StrictRedis(

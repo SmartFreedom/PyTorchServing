@@ -21,5 +21,6 @@ def init():
         ps.MammographyRoIProcess: ['MammographyRoI', 'MammographyDencity']
     }
 
+
 PARAMS = easydict.EasyDict()
 PARAMS.INIT = init

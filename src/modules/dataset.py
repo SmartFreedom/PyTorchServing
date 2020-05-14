@@ -3,11 +3,44 @@ import cv2
 import numpy as np
 import easydict
 
-import torch
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, IterableDataset
 from torchvision.transforms import ToTensor, Normalize, Compose
 
-from ..configs import config
+from src.api.queue_manager import QueueManager
+from src.configs import config
+
+
+img_transform = Compose([
+    ToTensor(),
+    Normalize(mean=config.MEAN, std=config.STD)
+])
+
+
+class InferenceDataset(IterableDataset):
+    def __init__(self, queue: QueueManager.LQueue):
+        self.queue = queue
+
+    def __iter__(self):
+        return DatasetIterator(self)
+
+    def process(self):
+        data = self.queue.pop()
+        data = {
+            "image": data['image'],
+            "pid": data['channel'],
+            "shape": data['image'].shape
+        }
+        data = easydict.EasyDict(data)
+        data.image = img_transform(np.expand_dims(data.image, -1))
+        return data
+
+
+class DatasetIterator:
+    def __init__(self, dataset: InferenceDataset):
+        self.dataset = dataset
+
+    def __next__(self):
+        return self.dataset.process()
 
 
 class TDataset(Dataset):
