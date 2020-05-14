@@ -1,6 +1,7 @@
 from src.models.models import Models, Preprocess
 from src.configs import config
 from src.utils import utils
+from src.utils import preprocess as ps
 
 import torch
 import os
@@ -16,6 +17,9 @@ def init():
 
     config.SHARED.models = Models()
     config.SHARED.preprocess = Preprocess()
+    config.PROCESS.MAP = {
+        ps.MammographyRoIProcess: ['MammographyRoI', 'MammographyDencity']
+    }
 
 PARAMS = easydict.EasyDict()
 PARAMS.INIT = init
