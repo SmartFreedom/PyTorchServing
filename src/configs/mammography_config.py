@@ -7,14 +7,14 @@ PARAMS.MEAN = [74.77618355029848]
 PARAMS.STD = [31.738553261533994]
 
 MODELS = {
-    'AlbuNet/UNet': {
+    'MammographyRoI': {
         'model': AlbuNet,
         'kwargs': {
-            'num_classes': 1,
+            'num_classes': 3,
             'is_deconv': True,
             'dropout': .2,
         },
-        'path': 'albunet18_fold_4_best.pth',
+        'path': 'albunet18_fold_2_best.pth',
     }
 }
 
