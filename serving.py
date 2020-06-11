@@ -1,24 +1,30 @@
 import torch
+import easydict
 
 from src.api import queue_manager as qm
 from src.api import flask
 from src.api import redis
 from src.configs import config
 from src.modules import dataset as ds
+import src.modules.learner as lrn
+import src.utils.preprocess as ps
+from src.modules import inference
+
+import multiprocessing as mp
 
 
 if __name__ == '__main__':
-    config.SHARED.INIT()
-    manager = qm.QueueManager(keys=['MammographyRoI', 'MammographyDencity'])
-    idataset = ds.InferenceDataset(manager['MammographyRoI'])
-
-    datagen = torch.utils.data.DataLoader(
-        idataset, batch_size=1,
-        num_workers=config.WORKERS_NB,
-        collate_fn=ds.inference_collater)
-
-    r_api = redis.RedisAPI(manager)
+    mp_queue = mp.Queue()
+    r_api = redis.RedisAPI(mp_queue)
     r_api.check()
-    r_api.listen()
+
+    redis_process = mp.Process(target=r_api.listen)
+    redis_process.start()
+
+    config.SHARED.INIT()
+
+    manager = qm.QueueManager()
+
+    manager.start(mp_queue=mp_queue)
 
     # flask.app.run(host="0.0.0.0", debug=config.API.DEBUG, port=config.API.PORT)
