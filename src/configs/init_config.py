@@ -18,7 +18,14 @@ def init():
     config.SHARED.models = Models()
     config.SHARED.preprocess = Preprocess()
     config.PROCESS.MAP = {
-        ps.MammographyRoIProcess: ['MammographyRoI', 'MammographyDencity']
+        ps.MammographyRoIProcess: [
+            'MammographyRoI', 
+            'DensityEstimation', 
+            'AsymmetryEstimation'
+        ],
+        ps.MammographyMassProcess: [
+            'MassSegmentation',
+        ],
     }
 
 
