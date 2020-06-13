@@ -4,14 +4,15 @@ import traceback
 import imageio
 import json
 
-from src.api import queue_manager as qm
 from src.configs import config
 
 
 class RedisAPI:
-    def __init__(self, manager: qm.QueueManager):
-        self.manager = manager
+    def __init__(self, mp_queue):
+        """mp_queue: mp.Queue"""
+        self.mp_queue = mp_queue
         self.jd = json.JSONDecoder()
+        self.je = json.JSONEncoder()
         self.r_connector = redis.StrictRedis(
             host=config.API.REDIS.HOST,
             port=config.API.REDIS.PORT,
@@ -40,17 +41,15 @@ class RedisAPI:
 
     def listen(self):
         while True:
-
-            time.sleep(1)
-#             if len(self.queue) >= config.MAX_QUEUE_LENGTH:
-#                 continue
-
-            message = self.subscriber.get_message()
+            message = self.subscriber.get_message(config.API.TTL)
             if message:
-                print(message)
-                channel = message['channel']
-                message = self.jd.decode(message['data'].decode())
-                self.manager.process(channel, data={
-                    k: imageio.imread(v)
-                    for k, v in message['urls'].items()
+                self.mp_queue.put({
+                    'channel': message['channel'].decode(),
+                     'message': self.jd.decode(message['data'].decode())['urls']
                 })
+
+    def publish(self, case_id, response):
+        self.r_connector.publish(
+            channel=config.API.REDIS.O_CHANNEL.format(case_id=case_id),
+            message=self.je.encode(response)
+        )
