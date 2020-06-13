@@ -15,17 +15,20 @@ class Models:
         assert item in config.MODELS
 
         model = config.MODELS[item]['model'](**config.MODELS[item]['kwargs'])
-        model = lrn.to_single_channel(model)
+        model = lrn.to_single_channel(model, config.MODELS[item]['fc'])
         checkpoint = config.PATHS.MODELS / item / config.MODELS[item]['path']
         model = lrn.get_model(model, checkpoint=checkpoint, devices=config.DEVICES)
-        return lrn.Inference(model)
+
+        if 'inference' in config.MODELS[item].keys():
+            return config.MODELS[item]['inference'](model)
+        else: return lrn.Inference(model) 
 
     def __getitem__(self, item):
         if item in self.collection.keys():
-            print('{} model already exists!'.format(item))
+            config.API.LOG('{} model already exists!'.format(item))
             return self.collection[item]
         self.collection[item] = self.get_model(item)
-        print('{} model has been created!'.format(item))
+        config.API.LOG('{} model has been created!'.format(item))
         return self.collection[item]
 
 
