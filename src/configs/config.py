@@ -4,7 +4,7 @@ import easydict
 import addict
 
 
-DEVICES = [0, 1, 2]
+DEVICES = [0, 1]
 
 PATHS = easydict.EasyDict()
 PATHS.DATA_ROOT = Path(os.getcwd()) / '..' / 'data'
@@ -13,10 +13,10 @@ PATHS.RESULTS = PATHS.DATA_ROOT / 'results'
 PATHS.LOGDIR = PATHS.DATA_ROOT / 'logdir'
 PATHS.OUTPUT = PATHS.DATA_ROOT / 'output'
 
-BATCH_SIZE = 8
+BATCH_SIZE = 1
 WORKERS_NB = 8
 
-CUDA_VISIBLE_DEVICES = "0, 1, 2"
+CUDA_VISIBLE_DEVICES = "1, 2"
 CUDA_IDX = 0
 
 
@@ -33,3 +33,13 @@ API = easydict.EasyDict(api_config.API.copy())
 MODELS = dict()
 MODELS.update(ct_config.MODELS)
 MODELS.update(mammography_config.MODELS)
+
+THRESHOLDS = {
+    'fpn': [.5] * 2,
+    'head': [.5] * 5,
+}
+
+THRESHOLDS_LOWER_BOUND = {
+    'fpn': [.3] * 2,
+    'head': [.3] * 5,
+}
