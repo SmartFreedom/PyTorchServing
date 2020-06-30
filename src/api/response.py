@@ -1,9 +1,34 @@
 import os
 import cv2
+import scipy
+import skimage
 import addict
 import numpy as np
 
+from src.utils import rle
 from src.configs import config
+
+
+def build_rle_findings(pred, threshold, lower_bound, key, side):
+    response = list()
+
+    mask = pred > threshold
+    labeled, colours = scipy.ndimage.label(mask)
+    labeled, colours = scipy.ndimage.label(mask)
+    watershed = skimage.segmentation.watershed(
+        -pred, labeled, mask=pred>lower_bound)
+    for c in range(1, colours + 1):
+        response.append({
+            "key": '{}.{}.{}'.format(side, key, c),
+            "prob": pred[mask].mean(),
+            "side": side,
+            "type": key,
+            "rle": {
+                "mask": rle.rle_encode(watershed == c),
+                "width": mask.shape[1],
+                "height": mask.shape[0],
+            }})
+    return response
 
 
 def build_mass_response(channel, threshold=.5, argmax=True):
@@ -97,6 +122,21 @@ def build_findings_response(channel, threshold=.2):
     return findings
 
 
+def get_rle_response(channel):
+    findings = list()
+    for side, el in channel.items():
+        for ptype in ['head', 'fpn']:
+            for i, pred in enumerate(el['{}_predictions'.format(ptype)]):
+                findings.extend(build_rle_findings(
+                    pred, 
+                    config.THRESHOLDS[ptype][i],
+                    config.THRESHOLDS_LOWER_BOUND[ptype][i],
+                    key=config.MAMMOGRAPHY_PARAMS.NAMES[ptype][i],
+                    side=side
+                ))
+    return findings
+
+
 def build_response(channel, channel_id):
     response = addict.Dict()
     response.prediction = addict.Dict()
@@ -106,4 +146,5 @@ def build_response(channel, channel_id):
     response.prediction.calcifications.update(build_calcifications_response(channel))
     response.paths = build_paths_response(channel, channel_id)
     response.findings = build_findings_response(channel)
+    response.findings.extend(get_rle_response(channel))
     return response
