@@ -62,6 +62,13 @@ def build_density_response(channel, threshold=.5, argmax=True):
     return density
 
 
+def build_birads_response(channel, threshold=.5, argmax=True):
+    cancer_prob = addict.Dict()
+    cancer_prob.response.value = .5
+    cancer_prob.key_value = True
+    return cancer_prob
+
+
 def build_distortions_response(channel, threshold=.5, argmax=True):
     distortions = addict.Dict()
     distortions.response.yes = np.max([ 
@@ -144,7 +151,30 @@ def build_response(channel, channel_id):
     response.prediction.distortions.update(build_distortions_response(channel))
     response.prediction.mass.update(build_mass_response(channel))
     response.prediction.calcifications.update(build_calcifications_response(channel))
+    response.prediction.cancer_prob.update(build_birads_response(channel))
     response.paths = build_paths_response(channel, channel_id)
     response.findings = build_findings_response(channel)
     response.findings.extend(get_rle_response(channel))
+    response.prediction.foreign_bodies = {
+            "response":
+            {
+
+            },
+            "default": "no",
+            "threshold": 0.5,
+            "argmax": True
+        }
+    response.prediction.asymmetry = {
+            "response":
+            {
+#                 "no": 0.6030043403,
+#                 "local": 0.033554545,
+#                 "total": 0.0083544105,
+#                 "local_calc": 0.0083544105,
+#                 "dynamic": 0.0083544105
+            },
+            "default": "no",
+            "threshold": 0.5,
+            "argmax": True
+        }
     return response
