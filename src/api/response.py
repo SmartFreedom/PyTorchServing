@@ -7,13 +7,13 @@ import numpy as np
 
 from src.utils import rle
 from src.configs import config
+from src.models import regression_tree as rt
 
 
 def build_rle_findings(pred, threshold, lower_bound, key, side):
     response = list()
 
     mask = pred > threshold
-    labeled, colours = scipy.ndimage.label(mask)
     labeled, colours = scipy.ndimage.label(mask)
     watershed = skimage.segmentation.watershed(
         -pred, labeled, mask=pred>lower_bound)
@@ -62,10 +62,29 @@ def build_density_response(channel, threshold=.5, argmax=True):
     return density
 
 
-def build_birads_response(channel, threshold=.5, argmax=True):
+def build_cancer_prob_response(channel, manager):
     cancer_prob = addict.Dict()
-    cancer_prob.response.value = .5
+    cancer_prob.response.value = get_cancer_dtr_response(channel, manager)
     cancer_prob.key_value = True
+    return cancer_prob
+
+
+def build_birads_response(channel, manager):
+    cancer_prob = addict.Dict()
+    value = get_cancer_dtr_response(channel, manager)
+    centroids = np.array(config.MAMMOGRAPHY_PARAMS.BIRADS_CENTROIDS)
+
+    tmp = 'birads_{}'
+    birads = {}
+    values = np.exp((centroids - value)**2)
+    for i, v in enumerate(values):
+        birads[tmp.format(i + 1)] = v
+        birads[tmp.format(0)] = 0
+
+    cancer_prob.response = birads
+    cancer_prob.default = 'birads_1',
+    cancer_prob.argmax = True,
+    cancer_prob.threshold = .5,
     return cancer_prob
 
 
@@ -110,6 +129,22 @@ def build_paths_response(channel, channel_id):
             cv2.imwrite(path, (head * 255).astype(np.uint8))
     return sides
 
+def build_paths_response_tmp(channel, channel_id):
+    sides = addict.Dict()
+    for side, el in channel.items():
+        root = config.PATHS.OUTPUT/channel_id/side
+        os.makedirs(root, exist_ok=True)
+        for i, fpn in enumerate(el['fpn_predictions']):
+            path = str(root/'fpn_{}.png'.format(config.MAMMOGRAPHY_PARAMS.NAMES['fpn'][i]))
+            sides['{}_{}'.format(side, config.MAMMOGRAPHY_PARAMS.NAMES['fpn'][i])] = path
+            cv2.imwrite(path, (fpn * 255).astype(np.uint8))
+
+        for i, head in enumerate(el['head_predictions']):
+            path = str(root/'head_{}.png'.format(config.MAMMOGRAPHY_PARAMS.NAMES['head'][i]))
+            sides['{}_{}'.format(side, config.MAMMOGRAPHY_PARAMS.NAMES['head'][i])] = path
+            cv2.imwrite(path, (head * 255).astype(np.uint8))
+    return sides
+
 
 def build_findings_response(channel, threshold=.2):
     findings = list()
@@ -129,13 +164,34 @@ def build_findings_response(channel, threshold=.2):
     return findings
 
 
+def get_cancer_dtr_response(channel, manager):
+    masks = {
+        'fpn': {},
+        'head': {},
+    }
+
+    for side, view in channel.items():
+        preds = view['fpn_predictions'].reshape(view['fpn_predictions'].shape[0], -1).max(1)
+        for i, el in enumerate(preds):
+            masks['fpn'][rt.MASK_NAMES['fpn'][i]] = [el]
+        preds = view['head_predictions'].reshape(view['head_predictions'].shape[0], -1).max(1)
+        for i, el in enumerate(preds):
+            masks['head'][rt.MASK_NAMES['head'][i]] = [el]
+
+    return manager.DecisionTreeRegressor.learner(masks)
+
+
 def get_rle_response(channel):
     findings = list()
     for side, el in channel.items():
         for ptype in ['head', 'fpn']:
             for i, pred in enumerate(el['{}_predictions'.format(ptype)]):
+                pred = cv2.resize(
+                    (255. * pred).astype(np.uint8), 
+                    channel[side]['original'].shape[:2][::-1]
+                )
                 findings.extend(build_rle_findings(
-                    pred, 
+                    pred.astype(np.float) / 255., 
                     config.THRESHOLDS[ptype][i],
                     config.THRESHOLDS_LOWER_BOUND[ptype][i],
                     key=config.MAMMOGRAPHY_PARAMS.NAMES[ptype][i],
@@ -144,21 +200,25 @@ def get_rle_response(channel):
     return findings
 
 
-def build_response(channel, channel_id):
+def build_response(channel, channel_id, manager):
     response = addict.Dict()
     response.prediction = addict.Dict()
     response.prediction.density.update(build_density_response(channel))
     response.prediction.distortions.update(build_distortions_response(channel))
     response.prediction.mass.update(build_mass_response(channel))
     response.prediction.calcifications.update(build_calcifications_response(channel))
-    response.prediction.cancer_prob.update(build_birads_response(channel))
-    response.paths = build_paths_response(channel, channel_id)
+    response.prediction.cancer_prob.update(build_cancer_prob_response(channel, manager))
+    response.prediction.birads.update(build_birads_response(channel, manager))
+    response.paths = build_paths_response_tmp(channel, channel_id)
     response.findings = build_findings_response(channel)
     response.findings.extend(get_rle_response(channel))
     response.prediction.foreign_bodies = {
             "response":
             {
-
+                "no": 0.6030043403,
+                "skin_mark": 0.033554545,
+                "breast_implant": 0.0083544105,
+                "tissue_mark": 0.0083544105
             },
             "default": "no",
             "threshold": 0.5,
@@ -167,14 +227,24 @@ def build_response(channel, channel_id):
     response.prediction.asymmetry = {
             "response":
             {
-#                 "no": 0.6030043403,
-#                 "local": 0.033554545,
-#                 "total": 0.0083544105,
-#                 "local_calc": 0.0083544105,
-#                 "dynamic": 0.0083544105
+                "no": 0.6030043403,
+                "local": 0.033554545,
+                "total": 0.0083544105,
+                "local_calc": 0.0083544105,
+                "dynamic": 0.0083544105
             },
             "default": "no",
             "threshold": 0.5,
+            "argmax": True
+        }
+    response.prediction.lymph_node = {
+            "response":
+            {
+                "yes": 0.008354410529136658,
+                "no": 0.9916439652442932
+            },
+            "threshold": 0.5,
+            "default": "no",
             "argmax": True
         }
     return response
