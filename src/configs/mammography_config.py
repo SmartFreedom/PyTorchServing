@@ -8,14 +8,22 @@ import src.modules.learner as lrn
 from src.models.albunet import AlbuNet
 from src.models.albunet import getFPNAlbuNetSE
 from src.models.resnet import resnet34
+from src.models.regression_tree import ProbabilityRegressor
+
 
 PARAMS = addict.Dict()
 PARAMS.MEAN = [74.77618355029848]
 PARAMS.STD = [31.738553261533994]
 
+PARAMS.INNER_MEAN = [0.24830265228665568]
+PARAMS.INNER_STD = [0.13130028764906437]
+
+PARAMS.BIRADS_CENTROIDS = [0.1, 0.35, 0.65, 0.85]
+
 MODELS = {
     'MammographyRoI': {
         'model': AlbuNet,
+        'type': 'pytorch',
         'transform': Compose([
             ToTensor(),
             Normalize(mean=PARAMS.MEAN, std=PARAMS.STD)
@@ -27,10 +35,11 @@ MODELS = {
             'is_deconv': True,
             'dropout': .2,
         },
-        'path': 'albunet18_fold_2_best.pth',
+        'path': 'albunet18_with_augs_fold_2_epoch_249_best.pth',
     },
     'DensityEstimation': {
         'model': resnet34,
+        'type': 'pytorch',
         'transform': Compose([
             ToTensor(),
             Normalize(mean=PARAMS.MEAN, std=PARAMS.STD)
@@ -45,6 +54,7 @@ MODELS = {
     },
     'AsymmetryEstimation': {
         'model': resnet34,
+        'type': 'pytorch',
         'transform': Compose([
             ToTensor(),
             Normalize(mean=PARAMS.MEAN, std=PARAMS.STD)
@@ -59,6 +69,7 @@ MODELS = {
     },
     'MassSegmentation': {
         'model': getFPNAlbuNetSE,
+        'type': 'pytorch',
         'transform': lambda x: np.rollaxis(x, -1, 0),
         'inference': lrn.InferenceMass,
         'fc': None,
@@ -69,6 +80,15 @@ MODELS = {
             'dropout': .25,
         },
         'path': 'head_fpn_albunet_se50x_fold_0_100th_epoch51_best.pth',
+    },
+    'DecisionTreeRegressor': {
+        'model': ProbabilityRegressor,
+        'type': 'sklearn',
+        'transform': lambda x: np.rollaxis(x, -1, 0),
+        'inference': lrn.InferenceMass,
+        'fc': None,
+        'kwargs': {},
+        'path': 'regr_decision_tree_model_l20_d7.pkl',
     }
 }
 
