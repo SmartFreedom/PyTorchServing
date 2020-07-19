@@ -4,7 +4,7 @@ import easydict
 import addict
 
 
-DEVICES = [0, 1]
+DEVICES = [0]
 
 PATHS = easydict.EasyDict()
 PATHS.DATA_ROOT = Path(os.getcwd()) / '..' / 'data'
@@ -16,7 +16,7 @@ PATHS.OUTPUT = PATHS.DATA_ROOT / 'output'
 BATCH_SIZE = 1
 WORKERS_NB = 8
 
-CUDA_VISIBLE_DEVICES = "0, 2"
+CUDA_VISIBLE_DEVICES = "1"
 CUDA_IDX = 0
 
 

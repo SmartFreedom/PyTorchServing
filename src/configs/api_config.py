@@ -16,7 +16,11 @@ API.REDIS.DB = 3
 API.REDIS.I_CHANNEL = 'requests.xray_mammography.*'
 API.REDIS.O_CHANNEL = 'analyse_result.{case_id}'
 API.REDIS.START = 1
-API.KEYS = [ 'MammographyRoI', 'DensityEstimation', 'AsymmetryEstimation', 'MassSegmentation' ]
+API.KEYS = [ 
+    'MammographyRoI', 'DensityEstimation', 
+    'AsymmetryEstimation', 'MassSegmentation', 
+    'DecisionTreeRegressor', 
+]
 API.PID_SIDE2KEY = lambda pid, side: '{}|{}'.format(pid, side)
 API.LOG = print
 

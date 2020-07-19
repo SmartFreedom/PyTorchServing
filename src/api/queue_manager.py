@@ -14,6 +14,7 @@ from src.configs import config
 import src.api.redis as rd
 import src.api.response as rs
 import src.modules.dataset  as ds
+import src.utils.preprocess as ps
 
 
 def load_image(url):
@@ -39,6 +40,7 @@ class QueueManager(easydict.EasyDict):
 
         config.API.LOG('RoI segmentation...')
         self.MammographyRoI.infer()
+        self.process_unify()
         self.correct()
         self.process([self.DensityEstimation.key])
 
@@ -50,7 +52,6 @@ class QueueManager(easydict.EasyDict):
         self.process([self.MassSegmentation.key])
         self.MassSegmentation.infer()
         self.response()
-
 
     def check_status(self):
         for _ in range(config.API.MAX_QUEUE_LENGTH):
@@ -101,6 +102,12 @@ class QueueManager(easydict.EasyDict):
                     processed['image'] = processed['cimage']
                 self[k].append(processed)
 
+    def process_unify(self):
+        for k, el in enumerate(self.queue):
+            if el['image'].dtype == np.uint16:
+                mask = self.MammographyRoI.predictions['{}|{}'.format(el['channel'], el['side'])]
+                el['image'] = ps.convert_and_unify(el['image'], mask['whole'] > .1)
+
     @staticmethod
     def crop(data, masks):
         key = config.API.PID_SIDE2KEY(data['channel'], data['side'])
@@ -148,7 +155,12 @@ class QueueManager(easydict.EasyDict):
                 for k, v in predictions.items() 
                 if '|'.join(k.split('|')[:-1]) == c
             }
-            response = rs.build_response(channel, c)
+            for side in channel.keys():
+                channel[side]['original'] = [
+                    q['image'] for q in self.queue 
+                    if q['side'] == side and q['channel'] == c
+                ].pop()
+            response = rs.build_response(channel, c, self)
             self.r_api.publish(c.split('.')[-1], response)
 
 
