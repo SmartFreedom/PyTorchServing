@@ -45,7 +45,8 @@ class RedisAPI:
             if message:
                 self.mp_queue.put({
                     'channel': message['channel'].decode(),
-                     'message': self.jd.decode(message['data'].decode())['urls']
+                    'message': self.jd.decode(message['data'].decode())['urls'],
+                    'data': self.jd.decode(message['data'].decode()),
                 })
 
     def publish(self, case_id, response):
