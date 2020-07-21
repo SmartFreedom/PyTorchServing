@@ -181,17 +181,32 @@ def get_cancer_dtr_response(channel, manager):
     return manager.DecisionTreeRegressor.learner(masks)
 
 
-def get_rle_response(channel):
+def get_rle_response_old(channel):
     findings = list()
     for side, el in channel.items():
         for ptype in ['head', 'fpn']:
             for i, pred in enumerate(el['{}_predictions'.format(ptype)]):
                 pred = cv2.resize(
-                    (255. * pred).astype(np.uint8), 
+                    (255. * pred).astype(np.uint8),
                     channel[side]['original'].shape[:2][::-1]
                 )
                 findings.extend(build_rle_findings(
                     pred.astype(np.float) / 255., 
+                    config.THRESHOLDS[ptype][i],
+                    config.THRESHOLDS_LOWER_BOUND[ptype][i],
+                    key=config.MAMMOGRAPHY_PARAMS.NAMES[ptype][i],
+                    side=side
+                ))
+    return findings
+
+
+def get_rle_response(channel):
+    findings = list()
+    for side, el in channel.items():
+        for ptype in ['head', 'fpn']:
+            for i, pred in enumerate(el['{}_predictions'.format(ptype)]):
+                findings.extend(build_rle_findings(
+                    pred.astype(np.float), 
                     config.THRESHOLDS[ptype][i],
                     config.THRESHOLDS_LOWER_BOUND[ptype][i],
                     key=config.MAMMOGRAPHY_PARAMS.NAMES[ptype][i],
