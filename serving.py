@@ -1,14 +1,29 @@
+%matplotlib inline
+import matplotlib.pyplot as plt
+from IPython.display import clear_output
+import seaborn as sns
+sns.set_style('white')
+import sys
+sys.path.append('..')
+​
+​
 import torch
+import addict
 import easydict
+import numpy as np
 
+from src.configs import config
 from src.api import queue_manager as qm
 from src.api import flask
 from src.api import redis
-from src.configs import config
 from src.modules import dataset as ds
+import src.api.response as rs
 import src.modules.learner as lrn
+from src.modules import smooth_tile_predictions as smt
 import src.utils.preprocess as ps
+import src.utils.rle as rle
 from src.modules import inference
+from src.models import regression_tree as rt
 
 import multiprocessing as mp
 
@@ -20,11 +35,9 @@ if __name__ == '__main__':
 
     redis_process = mp.Process(target=r_api.listen)
     redis_process.start()
-
     config.SHARED.INIT()
 
-    manager = qm.QueueManager()
+    manager = qm.QueueManager(r_api=r_api, mp_queue=mp_queue)
 
-    manager.start(mp_queue=mp_queue)
-
-    # flask.app.run(host="0.0.0.0", debug=config.API.DEBUG, port=config.API.PORT)
+    while True:
+        manager.start()
