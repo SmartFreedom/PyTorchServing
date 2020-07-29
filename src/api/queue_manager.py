@@ -68,7 +68,22 @@ class QueueManager(easydict.EasyDict):
             {
                 'side': k,
                 'image': load_image(v),
-                'channel': data['channel']
+                'channel': data['channel'],
+                #TODO: rewrite this
+                'thresholds': { 
+                    k: data['data']['thresholds'][k] if k in data['data']['thresholds'] else .5 
+                    for k in [
+                        'radiant_node',
+                        'intramammary_lymph_node',
+                        'calcification',
+                        'mask',
+                        'structure',
+                        'border',
+                        'shape',
+                        'calcification_malignant',
+                        'local_structure_perturbation',
+                    ]
+                }
             }
             for k, v in data['message'].items()
         ]
@@ -138,7 +153,7 @@ class QueueManager(easydict.EasyDict):
             data.pop('cimage')
     
     def response(self):
-        channels = set( q['channel'] for q in self.queue )
+        channels = { q['channel']: q['thresholds'] for q in self.queue }
         keys = set(
             config.API.PID_SIDE2KEY(q['channel'], q['side']) 
             for q in self.queue )
@@ -149,7 +164,7 @@ class QueueManager(easydict.EasyDict):
             predictions[k].update(self.MassSegmentation.predictions[k])
             predictions[k].update(self.MammographyRoI.predictions[k])
 
-        for c in channels:
+        for c in channels.keys():
             channel = { 
                 k.split('|')[-1]: v
                 for k, v in predictions.items() 
@@ -160,7 +175,7 @@ class QueueManager(easydict.EasyDict):
                     q['image'] for q in self.queue 
                     if q['side'] == side and q['channel'] == c
                 ].pop()
-            response = rs.build_response(channel, c, self)
+            response = rs.build_response(channel, c, self, thresholds=channels[c])
             self.r_api.publish(c.split('.')[-1], response)
 
 
