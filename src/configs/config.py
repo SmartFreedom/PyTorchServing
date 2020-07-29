@@ -36,10 +36,10 @@ MODELS.update(mammography_config.MODELS)
 
 THRESHOLDS = {
     'fpn': [.5] * 2,
-    'head': [.5] * 5,
+    'head': [.5] * 7,
 }
 
 THRESHOLDS_LOWER_BOUND = {
     'fpn': [.3] * 2,
-    'head': [.3] * 5,
+    'head': [.3] * 7,
 }

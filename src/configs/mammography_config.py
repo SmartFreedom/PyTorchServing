@@ -5,8 +5,8 @@ from torch import nn
 from torchvision.transforms import ToTensor, Normalize, Compose
 
 import src.modules.learner as lrn
-from src.models.albunet import AlbuNet
-from src.models.albunet import getFPNAlbuNetSE
+from src.models.albunet import AlbuNet, getFPNAlbuNetSE
+from src.models.mass_segm_albunet import AlbuNet as AlbuNetHEAD
 from src.models.resnet import resnet34
 from src.models.regression_tree import ProbabilityRegressor
 
@@ -67,19 +67,20 @@ MODELS = {
         },
         'path': 'resnet34_fold_0_best.pth',
     },
+    
     'MassSegmentation': {
-        'model': getFPNAlbuNetSE,
+        'model': AlbuNetHEAD,
         'type': 'pytorch',
         'transform': lambda x: np.rollaxis(x, -1, 0),
         'inference': lrn.InferenceMass,
         'fc': None,
         'kwargs': {
             'num_classes': 2, 
-            'num_head_classes': 5, 
-            'is_deconv': False, 
+            'num_head_classes': 7, 
+            'is_deconv': True, 
             'dropout': .25,
         },
-        'path': 'head_fpn_albunet_se50x_fold_0_100th_epoch51_best.pth',
+        'path': 'albunet34_fold_0_250thth_best.pth',
     },
     'DecisionTreeRegressor': {
         'model': ProbabilityRegressor,
@@ -103,7 +104,33 @@ PARAMS.NAMES = {
         2: 'shape',
         3: 'calcification_malignant',
         4: 'local_structure_perturbation',
+        5: 'radiant_node',
+        6: 'intramammary_lymph_node',
     }
+}
+
+PARAMS.REVERSE_NAMES = {
+    'fpn': {
+        'calcification': 0,
+        'mask': 1,
+    },
+    'head': {
+        'structure': 0,
+        'border': 1,
+        'shape': 2,
+        'calcification_malignant': 3,
+        'local_structure_perturbation': 4,
+        'radiant_node': 5,
+        'intramammary_lymph_node': 6,
+    }
+}
+
+PARAMS.MODES = { 
+    'nodule': [
+        'structure', 'border', 'shape', 
+        'local_structure_perturbation', 'radiant_node'
+    ],
+    'intramammary_lymph_node': ['intramammary_lymph_node']
 }
 
 PARAMS.MODELS = MODELS
