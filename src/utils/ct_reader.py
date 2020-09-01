@@ -76,10 +76,10 @@ def read_ct_scan(path, verbose=False):
 
 
 def extract_array(ct_scan):
-        heights = asarray([int(ct_slice.SliceLocation)for ct_slice in ct_scan])
-        ct_scan = stack([ct_slice.pixel_array for ct_slice in ct_scan])
-        ct_scan[ct_scan == ct_scan.min()] = 0
-        return ct_scan, heights
+    heights = asarray([int(ct_slice.SliceLocation)for ct_slice in ct_scan])
+    ct_scan = stack([ct_slice.pixel_array for ct_slice in ct_scan])
+    ct_scan[ct_scan == ct_scan.min()] = 0
+    return ct_scan, heights
 
 
 def get_pixels_hu(slices):
