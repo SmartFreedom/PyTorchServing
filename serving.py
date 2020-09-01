@@ -1,12 +1,3 @@
-%matplotlib inline
-import matplotlib.pyplot as plt
-from IPython.display import clear_output
-import seaborn as sns
-sns.set_style('white')
-import sys
-sys.path.append('..')
-​
-​
 import torch
 import addict
 import easydict

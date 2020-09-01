@@ -20,7 +20,12 @@ import src.utils.preprocess as ps
 def load_image(url):
     r = requests.get(url, allow_redirects=True)
     dfile = dicom.filebase.DicomBytesIO(r.content)
-    return dicom.read_file(dfile).pixel_array
+    dcm = dicom.read_file(dfile)
+    try:
+        spacing = np.array(dcm.PixelSpacing)
+    except:
+        spacing = None
+    return dcm.pixel_array, spacing
 
 
 class QueueManager(easydict.EasyDict):
@@ -56,18 +61,19 @@ class QueueManager(easydict.EasyDict):
     def check_status(self):
         for _ in range(config.API.MAX_QUEUE_LENGTH):
             try:
-                data = self.mp_queue.get(
-                    block=True, timeout=config.API.TTL)
+                data = self.mp_queue.get(block=True) #, timeout=config.API.TTL
             except eq.Empty:
                 break
             self.stack(data)
 
     def stack(self, data):
-        print(data['message'])
-        data = [
-            {
+        tmp = list()
+        for k, v in data['message'].items():
+            image, spacing = load_image(v)
+            tmp.append({
                 'side': k,
-                'image': load_image(v),
+                'image': image,
+                'spacing': spacing,
                 'channel': data['channel'],
                 #TODO: rewrite this
                 'thresholds': { 
@@ -84,10 +90,8 @@ class QueueManager(easydict.EasyDict):
                         'local_structure_perturbation',
                     ]
                 }
-            }
-            for k, v in data['message'].items()
-        ]
-        self.queue.extend(data)
+            })
+        self.queue.extend(tmp)
 
     def clear(self):
         self.queue.clear()
@@ -171,8 +175,8 @@ class QueueManager(easydict.EasyDict):
                 if '|'.join(k.split('|')[:-1]) == c
             }
             for side in channel.keys():
-                channel[side]['original'] = [
-                    q['image'] for q in self.queue 
+                channel[side]['original'], channel[side]['spacing'] = [
+                    (q['image'], q['spacing']) for q in self.queue 
                     if q['side'] == side and q['channel'] == c
                 ].pop()
             response = rs.build_response(channel, c, self, thresholds=channels[c])
