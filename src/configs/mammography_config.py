@@ -126,11 +126,28 @@ PARAMS.REVERSE_NAMES = {
 }
 
 PARAMS.MODES = { 
-    'nodule': [
+    'mass': [
         'structure', 'border', 'shape', 
         'local_structure_perturbation', 'radiant_node'
     ],
-    'intramammary_lymph_node': ['intramammary_lymph_node']
+    'lymph_node': ['intramammary_lymph_node'],
+    'calcification': []
+}
+
+PARAMS.POSITIVE_MAPS = {
+    'structure': 'inhomogen', 
+    'border': 'obscure_margin',
+    'shape': 'irregular_shape',
+    'radiant_node': 'spiculate_margin',
+    'intramammary_lymph_node': 'lymph_node',
+}
+
+PARAMS.NEGATIVE_MAPS = {
+    'structure': 'homogen', 
+    'border': 'circ_margin',
+    'shape': 'regular_shape',
+    'radiant_node': 'spiculate_margin',
+    'intramammary_lymph_node': 'lymph_node',
 }
 
 PARAMS.MODELS = MODELS

@@ -7,7 +7,7 @@ import addict
 DEVICES = [0]
 
 PATHS = easydict.EasyDict()
-PATHS.DATA_ROOT = Path(os.getcwd()) / '..' / 'data'
+PATHS.DATA_ROOT = Path(os.getcwd()) / 'data'
 PATHS.MODELS = PATHS.DATA_ROOT / 'models'
 PATHS.RESULTS = PATHS.DATA_ROOT / 'results'
 PATHS.LOGDIR = PATHS.DATA_ROOT / 'logdir'
@@ -16,7 +16,8 @@ PATHS.OUTPUT = PATHS.DATA_ROOT / 'output'
 BATCH_SIZE = 1
 WORKERS_NB = 8
 
-CUDA_VISIBLE_DEVICES = "1"
+# prefer nvidia-docker selection
+# CUDA_VISIBLE_DEVICES = "1"
 CUDA_IDX = 0
 
 
