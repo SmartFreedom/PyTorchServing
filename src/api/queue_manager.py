@@ -20,7 +20,12 @@ import src.utils.preprocess as ps
 def load_image(url):
     r = requests.get(url, allow_redirects=True)
     dfile = dicom.filebase.DicomBytesIO(r.content)
-    return dicom.read_file(dfile).pixel_array
+    dcm = dicom.read_file(dfile)
+    try:
+        spacing = np.array(dcm.PixelSpacing)
+    except:
+        spacing = None
+    return dcm.pixel_array, spacing
 
 
 class QueueManager(easydict.EasyDict):
@@ -56,23 +61,37 @@ class QueueManager(easydict.EasyDict):
     def check_status(self):
         for _ in range(config.API.MAX_QUEUE_LENGTH):
             try:
-                data = self.mp_queue.get(
-                    block=True, timeout=config.API.TTL)
+                data = self.mp_queue.get(block=True) #, timeout=config.API.TTL
             except eq.Empty:
                 break
             self.stack(data)
 
     def stack(self, data):
-        print(data['message'])
-        data = [
-            {
+        tmp = list()
+        for k, v in data['message'].items():
+            image, spacing = load_image(v)
+            tmp.append({
                 'side': k,
-                'image': load_image(v),
-                'channel': data['channel']
-            }
-            for k, v in data['message'].items()
-        ]
-        self.queue.extend(data)
+                'image': image,
+                'spacing': spacing,
+                'channel': data['channel'],
+                #TODO: rewrite this
+                'thresholds': { 
+                    k: data['data']['thresholds'][k] if k in data['data']['thresholds'] else .5 
+                    for k in [
+                        'radiant_node',
+                        'intramammary_lymph_node',
+                        'calcification',
+                        'mask',
+                        'structure',
+                        'border',
+                        'shape',
+                        'calcification_malignant',
+                        'local_structure_perturbation',
+                    ]
+                }
+            })
+        self.queue.extend(tmp)
 
     def clear(self):
         self.queue.clear()
@@ -138,7 +157,7 @@ class QueueManager(easydict.EasyDict):
             data.pop('cimage')
     
     def response(self):
-        channels = set( q['channel'] for q in self.queue )
+        channels = { q['channel']: q['thresholds'] for q in self.queue }
         keys = set(
             config.API.PID_SIDE2KEY(q['channel'], q['side']) 
             for q in self.queue )
@@ -149,18 +168,18 @@ class QueueManager(easydict.EasyDict):
             predictions[k].update(self.MassSegmentation.predictions[k])
             predictions[k].update(self.MammographyRoI.predictions[k])
 
-        for c in channels:
+        for c in channels.keys():
             channel = { 
                 k.split('|')[-1]: v
                 for k, v in predictions.items() 
                 if '|'.join(k.split('|')[:-1]) == c
             }
             for side in channel.keys():
-                channel[side]['original'] = [
-                    q['image'] for q in self.queue 
+                channel[side]['original'], channel[side]['spacing'] = [
+                    (q['image'], q['spacing']) for q in self.queue 
                     if q['side'] == side and q['channel'] == c
                 ].pop()
-            response = rs.build_response(channel, c, self)
+            response = rs.build_response(channel, c, self, thresholds=channels[c])
             self.r_api.publish(c.split('.')[-1], response)
 
 

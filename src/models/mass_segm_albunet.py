@@ -90,7 +90,8 @@ class AlbuNet(nn.Module):
         Proposed by Alexander Buslaev: https://www.linkedin.com/in/al-buslaev/
         """
 
-    def __init__(self, num_classes=1, num_filters=32, encoder=None,
+    def __init__(self, num_classes=1, head_num_filters=512, 
+                 num_head_classes=1, num_filters=32, encoder=None,
                  pretrained=False, is_deconv=False, dropout=0,
                  base_num_filters=512
                 ):
@@ -149,25 +150,32 @@ class AlbuNet(nn.Module):
         self.dec2 = DecoderBlockV2(
             base_num_filters // 8 + num_filters * 2, 
             num_filters * 2 * 2, num_filters * 2 * 2, is_deconv)
-        self.dec1 = DecoderBlockV2(
-            num_filters * 2 * 2, 
-            num_filters * 2 * 2, num_filters, is_deconv)
+        self.dec1 = nn.Sequential(
+            ConvRelu(num_filters * 2 * 2, num_filters * 2 * 2),
+            ConvRelu(num_filters * 2 * 2, num_filters),
+        )
         self.dec0 = ConvRelu(num_filters, num_filters)
         self.final = nn.Conv2d(num_filters, num_classes, kernel_size=1)
         self.dropout2d = nn.Dropout2d(p=dropout) if dropout else None
+        self.head_final = nn.Conv2d(head_num_filters, num_head_classes, kernel_size=1)
         self.pool = nn.MaxPool2d(2, 2)
 
     def forward(self, x):
         conv1 = self.conv1(x)
         conv2 = self.conv2(conv1)
+        if self.dropout2d is not None:
+            conv2 = self.dropout2d(conv2)
         conv3 = self.conv3(conv2)
+        if self.dropout2d is not None:
+            conv3 = self.dropout2d(conv3)
         conv4 = self.conv4(conv3)
         if self.dropout2d is not None:
             conv4 = self.dropout2d(conv4)
         conv5 = self.conv5(conv4)
         if self.dropout2d is not None:
             conv5 = self.dropout2d(conv5)
-
+        
+        head = self.head_final(conv5)
         center = self.center(self.pool(conv5))
         if self.dropout2d is not None:
             center = self.dropout2d(center)
@@ -182,9 +190,9 @@ class AlbuNet(nn.Module):
 
         x_out = self.final(dec0)
 
-        return x_out
+        return x_out, head
 
-
+    
 class AlbuNetSE(AlbuNet):
 
     def forward(self, x):
@@ -214,15 +222,6 @@ class AlbuNetSE(AlbuNet):
         x_out = self.final(dec0)
 
         return x_out
-
-
-def getFPNAlbuNetSE(num_classes=2, num_head_classes=5, is_deconv=False, dropout=.25):
-    return FPNAlbuNetSE(
-        num_classes=num_classes, 
-        num_head_classes=num_head_classes, 
-        is_deconv=is_deconv, 
-        dropout=dropout,
-        encoder=se.se_resnext50_32x4d(1, pretrained=True))
 
 
 class DecoderBlockV3(nn.Module):

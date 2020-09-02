@@ -318,8 +318,8 @@ def infer_subdivs(subdivs, model):
     head_predictions = list()
 
     with torch.no_grad():
-        for image in [subdivs[:len(subdivs)//2], subdivs[len(subdivs)//2:]]:
-            image = image[..., 0].astype(np.uint8) / 255.
+        for i, _ in enumerate(subdivs):
+            image = subdivs[i:i+1][..., 0].astype(np.uint8) / 255.
             image = torch.Tensor(
                 (image - config.PROCESS.MASS.MEAN_IN_SUBDIVS) 
                 / config.PROCESS.MASS.STD_IN_SUBDIVS)

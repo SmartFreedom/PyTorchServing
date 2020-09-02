@@ -31,7 +31,9 @@ def find_maxima(
         value = data[roi].max()
         centroids.append({ 
             'centroid_x': centroid[1] * scale_factor[1], 
-            'centroid_y': centroid[0] * scale_factor[0], 
+            'centroid_y': centroid[0] * scale_factor[0],
+            'unscaled_centroid_x': centroid[1], 
+            'unscaled_centroid_y': centroid[0],
             'probability': value,
             'seriesuid': seriesuid
         })

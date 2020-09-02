@@ -1,9 +1,16 @@
 import os
 import cv2
 import scipy
+import scipy.ndimage
 import skimage
 import addict
 import numpy as np
+
+from collections import defaultdict
+
+import torch
+from torch import nn
+from torch.nn import functional as F
 
 from src.utils import rle
 from src.configs import config
@@ -21,7 +28,7 @@ def build_rle_findings(pred, threshold, lower_bound, key, side):
         response.append({
             "key": '{}.{}.{}'.format(side, key, c),
             "prob": pred[mask].mean(),
-            "side": side,
+            "image": side,
             "type": key,
             "rle": {
                 "mask": rle.rle_encode(watershed == c),
@@ -99,17 +106,35 @@ def build_distortions_response(channel, threshold=.5, argmax=True):
     return distortions
 
 
+def build_lymph_node_response(channel, threshold=.5, argmax=True):
+    lymph_node = addict.Dict()
+    lymph_node.response.yes = np.max([ 
+        v['head_predictions'][6].max() for v in channel.values() ])
+    lymph_node.response.no = 1. - lymph_node.response.yes
+    lymph_node.threshold = threshold
+    lymph_node.default = "no"
+    lymph_node.argmax = argmax
+    return lymph_node
+
+
 def build_calcifications_response(channel, threshold=.5, argmax=True):
-    calcifications = addict.Dict()
-    calcifications.response.no = 1. - np.max([ 
+    calcifications_benign = addict.Dict()
+    calcifications_benign.response.yes = np.max([ 
         v['fpn_predictions'][0].max() for v in channel.values() ])
-    calcifications.response.malignant = np.max([ 
+    calcifications_benign.response.no = 1. - calcifications_benign.response.yes
+    calcifications_benign.threshold = threshold
+    calcifications_benign.default = "no"
+    calcifications_benign.argmax = argmax
+
+    calcifications_malignant = addict.Dict()    
+    calcifications_malignant.response.yes = np.max([ 
         v['head_predictions'][3].max() for v in channel.values() ])
-    calcifications.response.benign = 1. - calcifications.response.malignant
-    calcifications.threshold = threshold
-    calcifications.default = "no"
-    calcifications.argmax = argmax
-    return calcifications
+    calcifications_malignant.response.no = 1. - calcifications_malignant.response.yes
+    calcifications_malignant.threshold = threshold
+    calcifications_malignant.default = "no"
+    calcifications_malignant.argmax = argmax
+
+    return calcifications_benign, calcifications_malignant
 
 
 def build_paths_response(channel, channel_id):
@@ -129,6 +154,7 @@ def build_paths_response(channel, channel_id):
             cv2.imwrite(path, (head * 255).astype(np.uint8))
     return sides
 
+
 def build_paths_response_tmp(channel, channel_id):
     sides = addict.Dict()
     for side, el in channel.items():
@@ -146,21 +172,36 @@ def build_paths_response_tmp(channel, channel_id):
     return sides
 
 
-def build_findings_response(channel, threshold=.2):
+def build_calcifications_findings_response(channel, thresholds):
     findings = list()
     for side, v in channel.items():
+        name = config.MAMMOGRAPHY_PARAMS.REVERSE_NAMES['head']['calcification_malignant']
+        malignancy = v['head_predictions'][name]
+        v['centroids']['malignant'] = 0.
         for i, row in v['centroids'].iterrows():
-            if threshold is not None and row.probability < threshold:
+            v['centroids'].loc[i, 'malignant'] = malignancy[
+                int(np.clip(row.unscaled_centroid_y / 16, 0, malignancy.shape[0] - 1)), 
+                int(np.clip(row.unscaled_centroid_x / 16, 0, malignancy.shape[1] - 1))
+            ]
+        for i, row in v['centroids'].iterrows():
+            if row.probability < thresholds["calcification"]:
                 continue
-            findings.append({
+            tmp = {
                 "key": i,
-                "prob": row.probability,
+                "scores": {},
                 "image": side,
+                "type": 'calcification',
+                "prob": row.probability,
                 "geometry": {
                     "points": [{
                         "x": int(row.centroid_x),
                         "y": int(row.centroid_y) }]
-                }})
+                }}
+            tmp["attributes"] = [].append(
+                "malignant" if row.malignant > thresholds['malignant']
+                else "benign")
+            findings.append(tmp)
+
     return findings
 
 
@@ -175,19 +216,19 @@ def get_cancer_dtr_response(channel, manager):
         for i, el in enumerate(preds):
             masks['fpn'][rt.MASK_NAMES['fpn'][i]] = [el]
         preds = view['head_predictions'].reshape(view['head_predictions'].shape[0], -1).max(1)
-        for i, el in enumerate(preds):
-            masks['head'][rt.MASK_NAMES['head'][i]] = [el]
+        for i, key in rt.MASK_NAMES['head'].items():
+            masks['head'][key] = [preds[i]]
 
     return manager.DecisionTreeRegressor.learner(masks)
 
 
-def get_rle_response(channel):
+def get_rle_response_old(channel):
     findings = list()
     for side, el in channel.items():
         for ptype in ['head', 'fpn']:
             for i, pred in enumerate(el['{}_predictions'.format(ptype)]):
                 pred = cv2.resize(
-                    (255. * pred).astype(np.uint8), 
+                    (255. * pred).astype(np.uint8),
                     channel[side]['original'].shape[:2][::-1]
                 )
                 findings.extend(build_rle_findings(
@@ -200,30 +241,173 @@ def get_rle_response(channel):
     return findings
 
 
-def build_response(channel, channel_id, manager):
+def get_rle_response(channel):
+    findings = list()
+    for side, el in channel.items():
+        for ptype in ['head', 'fpn']:
+            for i, pred in enumerate(el['{}_predictions'.format(ptype)]):
+                findings.extend(build_rle_findings(
+                    pred.astype(np.float), 
+                    config.THRESHOLDS[ptype][i],
+                    config.THRESHOLDS_LOWER_BOUND[ptype][i],
+                    key=config.MAMMOGRAPHY_PARAMS.NAMES[ptype][i],
+                    side=side
+                ))
+    return findings
+
+
+def inter_dice(a, b):
+    a = a.astype(np.bool)
+    b = b.astype(np.bool)
+    return ((a & b).sum() ) / (min(a.sum(), b.sum()) + 1e-5)
+
+
+def fit_ellipse(roi):
+    roi = roi ^ scipy.ndimage.binary_erosion(roi, iterations=5)
+    return cv2.fitEllipse(np.expand_dims(np.array(np.where(roi)).T, 1))
+
+def map_attributes(positives, attributes):
+    negatives = list(set(
+        attributes).difference(
+        positives).intersection(
+        list(config.MAMMOGRAPHY_PARAMS.NEGATIVE_MAPS.keys())
+    ))
+    mapped = [ config.MAMMOGRAPHY_PARAMS.POSITIVE_MAPS[p] for p in positives ]
+    mapped += [ config.MAMMOGRAPHY_PARAMS.POSITIVE_MAPS[n] for n in negatives ]
+    return mapped
+
+def build_findings_rle_response(channel, thresholds):
+    findings = list()
+    for side, el in channel.items():
+        spatial_coeffs = np.array(
+            el['original'].shape[-2:]) / np.array(el['head_predictions'].shape[-2:])
+        calcification = torch.tensor(el['fpn_predictions'][1:])
+        calcification = F.max_pool2d(
+            calcification, kernel_size=16, stride=16).data.numpy()[0]
+
+        for mode, mode_keys in config.MAMMOGRAPHY_PARAMS.MODES.items():
+            response_mask = np.zeros_like(el['head_predictions'][0])
+            response = defaultdict(dict)
+
+            for i, pred in enumerate(el['head_predictions']):
+                key = config.MAMMOGRAPHY_PARAMS.NAMES['head'][i]
+                if key not in mode_keys:
+                    continue
+
+                mask = pred > thresholds[key]
+                labeled, colours = scipy.ndimage.label(mask)
+                watershed = skimage.segmentation.watershed(
+                    -pred, labeled, 
+                    mask=pred>config.THRESHOLDS_LOWER_BOUND['head'][i])
+
+                for c in range(1, colours + 1):
+                    roin = watershed == c
+                    colour = response_mask.max() + 1
+                    response[colour].update({ key:  pred[roin].max() })
+
+                    intersected = response_mask[roin]
+                    colourso = np.unique(intersected[intersected != 0])
+
+                    mathced = [ co for co, v in { 
+                        co: inter_dice(response_mask == co, roin)
+                        for co in colourso
+                    }.items() if v > .2 ]
+
+                    for co in mathced:
+                        roin |= response_mask == co
+                        response[colour].update({
+                            k: v if k not in response[colour] else max(v, response[colour][k])
+                            for k, v in response[co].items()
+                        })
+                        response.pop(co)
+
+                    response_mask[roin] = colour
+
+            for idx, probs in response.items():
+                roi = response_mask == idx
+                c_score = calcification[roi].max()
+                ellipse = fit_ellipse(roi)
+                tmp = {
+                    "key": '{}.{}'.format(side, idx),
+                    "image": side,
+                    "roi": side[0],
+                    "geometry": {
+                        "area_mm": np.prod([
+                            roi.sum(), 
+                            el['spacing'][0], 
+                            el['spacing'][1], 
+                            *spatial_coeffs]),
+                        "size_min_mm": np.prod([
+                            min(ellipse[1]), 
+                            el['spacing'].mean(), 
+                            spatial_coeffs.mean()]),
+                        "size_max_mm": np.prod([
+                            max(ellipse[1]), 
+                            el['spacing'].mean(), 
+                            spatial_coeffs.mean()]),
+                        "points": [
+                        {
+                            "x": ellipse[0][0],
+                            "y": ellipse[0][1]
+                        }],
+                        "rle": [{
+                            "mask": rle.rle_encode(roi),
+                            "width": roi.shape[1],
+                            "height": roi.shape[0],
+                    }]}
+                }
+                if 'local_structure_perturbation' in probs:
+                    tmp_ = {
+                        "prob": probs['local_structure_perturbation'],
+                        "attributes": ['distortions'],
+                        "type": 'distortions',
+                    }
+                    tmp_.update(tmp)
+                    findings.append(tmp_)
+                    probs.pop('local_structure_perturbation')
+
+                if not len(probs):
+                    continue
+
+                tmp.update({
+                    #TODO: return old variant.
+                    #"scores": probs,
+                    #TODO: return old since it's ridiculous
+                    "prob": np.mean(list(probs.values())),
+                    "attributes": map_attributes(list(probs.keys()), mode_keys),
+                    "type": mode,
+                })
+                tmp["attributes"].append(
+                    'with_calc' if c_score > thresholds['calcification']
+                    else 'without_calc'
+                )
+                findings.append(tmp)
+
+    return findings
+
+
+def build_response(channel, channel_id, manager, thresholds):
     response = addict.Dict()
     response.prediction = addict.Dict()
     response.prediction.density.update(build_density_response(channel))
-    response.prediction.distortions.update(build_distortions_response(channel))
-    response.prediction.mass.update(build_mass_response(channel))
-    response.prediction.calcifications.update(build_calcifications_response(channel))
     response.prediction.cancer_prob.update(build_cancer_prob_response(channel, manager))
     response.prediction.birads.update(build_birads_response(channel, manager))
+
+    for key in ['r', 'l']:
+        channel_ = { k: v for k, v in channel.items() if k[0] == key}
+        response.prediction[key] = addict.Dict()
+        response.prediction[key].distortions.update(build_distortions_response(channel_))
+        response.prediction[key].lymph_node.update(build_lymph_node_response(channel_))
+        response.prediction[key].mass.update(build_mass_response(channel_))
+        calcifications_benign, calcifications_malignant = build_calcifications_response(channel_)
+        response.prediction[key].calcifications_benign.update(calcifications_benign)
+        response.prediction[key].calcifications_malignant.update(calcifications_malignant)
+        response.prediction[key].cancer_prob.update(build_cancer_prob_response(channel_, manager))
+
     response.paths = build_paths_response_tmp(channel, channel_id)
-    response.findings = build_findings_response(channel)
-    response.findings.extend(get_rle_response(channel))
-    response.prediction.foreign_bodies = {
-            "response":
-            {
-                "no": 0.6030043403,
-                "skin_mark": 0.033554545,
-                "breast_implant": 0.0083544105,
-                "tissue_mark": 0.0083544105
-            },
-            "default": "no",
-            "threshold": 0.5,
-            "argmax": True
-        }
+    response.findings = build_calcifications_findings_response(channel, thresholds)
+    response.findings.extend(build_findings_rle_response(channel, thresholds))
+
     response.prediction.asymmetry = {
             "response":
             {
@@ -237,14 +421,7 @@ def build_response(channel, channel_id, manager):
             "threshold": 0.5,
             "argmax": True
         }
-    response.prediction.lymph_node = {
-            "response":
-            {
-                "yes": 0.008354410529136658,
-                "no": 0.9916439652442932
-            },
-            "threshold": 0.5,
-            "default": "no",
-            "argmax": True
-        }
+
+    response.roi = ['r', 'l']
+
     return response

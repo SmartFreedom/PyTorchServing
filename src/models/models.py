@@ -14,9 +14,14 @@ class Models:
     def get_model(self, item: str, version=None):
         assert item in config.MODELS
 
-        model = config.MODELS[item]['model'](**config.MODELS[item]['kwargs'])
-        model = lrn.to_single_channel(model, config.MODELS[item]['fc'])
         checkpoint = config.PATHS.MODELS / item / config.MODELS[item]['path']
+        kwargs = config.MODELS[item]['kwargs']
+        if 'pytorch' not in config.MODELS[item]['type']:
+            kwargs['checkpoint'] = checkpoint
+            return config.MODELS[item]['model'](**kwargs)
+
+        model = config.MODELS[item]['model'](**kwargs)
+        model = lrn.to_single_channel(model, config.MODELS[item]['fc'])
         model = lrn.get_model(model, checkpoint=checkpoint, devices=config.DEVICES)
 
         if 'inference' in config.MODELS[item].keys():

@@ -1,4 +1,4 @@
-FROM nvidia/cuda:9.0-base-ubuntu16.04
+FROM nvidia/cuda:10.1-base-ubuntu16.04
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends apt-utils
@@ -69,7 +69,7 @@ ENV PATH /opt/conda/envs/$(head -1 /opt/entrypoint/environment.yml | cut -d' ' -
 ENV DEBIAN_FRONTEND teletype
 
 # Set the default command to launch redis & torch server
-EXPOSE 8888 6006 22 9358 9769
+EXPOSE 8888 6006 22 9358 9769 6379
 # ENTRYPOINT /bin/bash
 
 ENTRYPOINT /bin/bash init.sh
