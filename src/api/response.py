@@ -327,11 +327,9 @@ def build_findings_rle_response(channel, thresholds):
                 roi = response_mask == idx
                 c_score = calcification[roi].max()
                 ellipse = fit_ellipse(roi)
-                tmp = {
-                    "key": '{}.{}'.format(side, idx),
-                    "image": side,
-                    "roi": side[0],
-                    "geometry": {
+                phys_spacing = dict()
+                try:
+                    phys_spacing.update({
                         "area_mm": np.prod([
                             roi.sum(), 
                             el['spacing'][0], 
@@ -345,6 +343,14 @@ def build_findings_rle_response(channel, thresholds):
                             max(ellipse[1]), 
                             el['spacing'].mean(), 
                             spatial_coeffs.mean()]),
+                    })
+                except:
+                    pass
+                tmp = {
+                    "key": '{}.{}'.format(side, idx),
+                    "image": side,
+                    "roi": side[0],
+                    "geometry": {
                         "points": [
                         {
                             "x": ellipse[0][0],
@@ -354,7 +360,9 @@ def build_findings_rle_response(channel, thresholds):
                             "mask": rle.rle_encode(roi),
                             "width": roi.shape[1],
                             "height": roi.shape[0],
-                    }]}
+                        }],
+                        **phys_spacing,
+                    }
                 }
                 if 'local_structure_perturbation' in probs:
                     tmp_ = {
