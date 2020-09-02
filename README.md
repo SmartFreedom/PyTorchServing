@@ -1,7 +1,11 @@
 # PyTorchServing
 PyTorch Serving
 
-# Launching
+## Requirements
+ - [nvidia-docker](https://github.com/NVIDIA/nvidia-docker)
+ - [git LFS](https://git-lfs.github.com/)
+
+## Launching
 
 Build & run docker:  
 
