@@ -198,7 +198,7 @@ def build_calcifications_findings_response(channel, thresholds):
                         "y": int(row.centroid_y) }]
                 }}
             tmp["attributes"] = [].append(
-                "malignant" if row.malignant > thresholds['malignant']
+                "malignant" if row.malignant > thresholds['malignancy']
                 else "benign")
             findings.append(tmp)
 

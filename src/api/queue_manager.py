@@ -86,6 +86,7 @@ class QueueManager(easydict.EasyDict):
                         'structure',
                         'border',
                         'shape',
+                        'malignancy',
                         'calcification_malignant',
                         'local_structure_perturbation',
                     ]
