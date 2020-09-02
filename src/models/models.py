@@ -35,20 +35,3 @@ class Models:
         self.collection[item] = self.get_model(item)
         config.API.LOG('{} model has been created!'.format(item))
         return self.collection[item]
-
-
-# TODO: refactor as Models class
-class Preprocess:
-    def __init__(self):
-        self.dataset = ds.CTDataset()
-
-    def __call__(self, item, inpt):
-        assert item in config.MODELS
-        names, dscan = ctr.read_ct_scan(inpt)
-        scan = ctr.get_pixels_hu(dscan)
-
-        # lungs, lung_left, lung_right, trachea = lsg.improved_lung_segmentation(scan)
-        # segmentation = np.max([3 * lung_left, 2 * lung_right, 1 * trachea], axis=0)
-        self.dataset.populate(names, scan, None)#segmentation)
-        return ds.DataLoader(self.dataset, batch_size=config.BATCH_SIZE)
-        # lsg.save_lungs_mask(segmentation, names, case)
