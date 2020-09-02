@@ -7,7 +7,7 @@ import addict
 DEVICES = [0]
 
 PATHS = easydict.EasyDict()
-PATHS.DATA_ROOT = Path(os.getcwd()) /'..'/ 'data'
+PATHS.DATA_ROOT = Path(os.getcwd()) / 'data'
 PATHS.MODELS = PATHS.DATA_ROOT / 'models'
 PATHS.RESULTS = PATHS.DATA_ROOT / 'results'
 PATHS.LOGDIR = PATHS.DATA_ROOT / 'logdir'
