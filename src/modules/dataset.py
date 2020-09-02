@@ -146,31 +146,6 @@ class TDataset(Dataset):
         return len(self.scan)
 
 
-class CTDataset(TDataset):
-    def __init__(self, augmentations=None):
-        super().__init__(augmentations)
-        self.to_tensor = Compose([
-            ToTensor(),
-            Normalize(
-                mean=config.CT_PARAMS.MEAN,
-                std=config.CT_PARAMS.STD
-            )
-        ])
-
-    def postprocess(self, **kwargs):
-        kwargs.update({
-            'image': self.to_tensor(kwargs['image'].astype(np.uint8)),
-        })
-        return kwargs
-
-    def preprocess(self, scan, lungs=None):
-        scan += 1024
-        scan = 255. * np.clip(scan, 0, 500) / 500.  # -> [0-255]
-        if lungs is not None:
-            scan[lungs == 0] = config.CT_PARAMS.MEAN
-        return scan
-
-
 class MammographyDataset(TDataset):
     def __init__(self, augmentations=None):
         super().__init__(augmentations)
