@@ -17,6 +17,6 @@ cd PyTorchServing
 
 Inside docker:  
 ```bash
-./init.sh
+(crt) entrypoint$ python serving.py 
 CTRL+P+Q
 ```
