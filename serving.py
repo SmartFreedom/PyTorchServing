@@ -34,3 +34,12 @@ if __name__ == '__main__':
 
     while True:
         manager.start()
+
+    tracebacks = list()
+    while True:
+        try:
+            clear_output(wait=True)
+            manager.start()    
+        except Exception:
+            traceback.print_exc(file=sys.stdout)
+            tracebacks.append(traceback.format_exc())

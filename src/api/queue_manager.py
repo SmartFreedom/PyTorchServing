@@ -70,27 +70,31 @@ class QueueManager(easydict.EasyDict):
         tmp = list()
         for k, v in data['message'].items():
             image, spacing = load_image(v)
+            thresholds = { 
+                k: data['data']['thresholds'][k] 
+                if 'thresholds' in data['data'] 
+                and k in data['data']['thresholds'] else .5 
+                for k in [
+                    'radiant_node',
+                    'intramammary_lymph_node',
+                    'calcification',
+                    'mask',
+                    'structure',
+                    'border',
+                    'shape',
+                    'malignancy',
+                    'calcification_malignant',
+                    'local_structure_perturbation',
+                ]}
+
             tmp.append({
                 'side': k,
                 'image': image,
                 'spacing': spacing,
                 'channel': data['channel'],
                 #TODO: rewrite this
-                'thresholds': { 
-                    k: data['data']['thresholds'][k] if k in data['data']['thresholds'] else .5 
-                    for k in [
-                        'radiant_node',
-                        'intramammary_lymph_node',
-                        'calcification',
-                        'mask',
-                        'structure',
-                        'border',
-                        'shape',
-                        'malignancy',
-                        'calcification_malignant',
-                        'local_structure_perturbation',
-                    ]
-                }
+                'thresholds': thresholds,
+                
             })
         self.queue.extend(tmp)
 
