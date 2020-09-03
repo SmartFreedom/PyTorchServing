@@ -12,6 +12,9 @@ Build & run docker:
 ```bash
 git clone
 cd PyTorchServing
+git lfs install
+git fetch
+git merge/origin
 ./docker.init.sh -i $GPU_INDEX
 ```  
 
