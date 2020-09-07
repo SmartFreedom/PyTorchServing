@@ -48,7 +48,7 @@ def build_mass_response(channel, threshold=.5, argmax=True):
         v['head_predictions'][2].max() for v in channel.values() ])
     mass.response.with_calc = np.max([ 
         v['fpn_predictions'][0].max() for v in channel.values() ])
-    mass.response.no = all( v < threshold for v in mass.response.values() )
+    mass.response.no = 1. - max(mass.response.values())
     mass.response.homogen = 1. - mass.response.inhomogen
     mass.response.circ_margin = 1. - mass.response.obscure_margin
     mass.response.regular_shape = 1. - mass.response.irregular_shape
