@@ -59,7 +59,8 @@ RUN cd $HOME && wget http://download.redis.io/redis-stable.tar.gz \
  && rm redis-stable.tar.gz
 
 # Copy repository and data
-ADD . /opt/entrypoint/
+COPY --chown=user . /opt/entrypoint/
+RUN chmod -R 765 /opt/entrypoint/
 
 # Create an environment
 RUN conda env create -f /opt/entrypoint/environment.yml
@@ -67,6 +68,7 @@ RUN echo "source activate $(head -1 /opt/entrypoint/environment.yml | cut -d' ' 
 ENV PATH /opt/conda/envs/$(head -1 /opt/entrypoint/environment.yml | cut -d' ' -f2)/bin:$PATH
 
 ENV DEBIAN_FRONTEND teletype
+ENV REDIS_DB_V=$REDIS_DB_V
 
 # Set the default command to launch redis & torch server
 EXPOSE 8888 6006 22 9358 9769 6379
