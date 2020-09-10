@@ -1,3 +1,4 @@
+import os
 import easydict
 
 
@@ -12,7 +13,7 @@ API.DEBUG = True
 API.REDIS = easydict.EasyDict()
 API.REDIS.HOST = '10.20.12.13'
 API.REDIS.PORT = 6379
-API.REDIS.DB = 3
+API.REDIS.DB = os.environ['REDIS_DB_V']
 API.REDIS.I_CHANNEL = 'requests.xray_mammography.*'
 API.REDIS.O_CHANNEL = 'analyse_result.{case_id}'
 API.REDIS.START = 1
@@ -21,8 +22,15 @@ API.KEYS = [
     'AsymmetryEstimation', 'MassSegmentation', 
     'DecisionTreeRegressor', 
 ]
+
+open(os.environ['SERVING_LOG'], 'w').close()
+
+def log(message):
+    with open(os.environ['SERVING_LOG'], "a") as myfile:
+        myfile.write(message)
+
 API.PID_SIDE2KEY = lambda pid, side: '{}|{}'.format(pid, side)
-API.LOG = print
+API.LOG = log
 
 API.MAX_QUEUE_LENGTH = 1
 API.TTL = 1

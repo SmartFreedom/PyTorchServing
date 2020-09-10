@@ -69,6 +69,7 @@ ENV PATH /opt/conda/envs/$(head -1 /opt/entrypoint/environment.yml | cut -d' ' -
 
 ENV DEBIAN_FRONTEND teletype
 ENV REDIS_DB_V=$REDIS_DB_V
+ENV SERVING_LOG=/opt/entrypoint/logfile
 
 # Set the default command to launch redis & torch server
 EXPOSE 8888 6006 22 9358 9769 6379
