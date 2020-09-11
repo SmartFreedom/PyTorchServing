@@ -8,13 +8,14 @@ DEVICES = [0]
 
 PATHS = easydict.EasyDict()
 PATHS.DATA_ROOT = Path(os.getcwd()) / 'data'
+PATHS.DATASET = Path(os.getcwd()) / 'dataset'
 PATHS.MODELS = PATHS.DATA_ROOT / 'models'
 PATHS.RESULTS = PATHS.DATA_ROOT / 'results'
 PATHS.LOGDIR = PATHS.DATA_ROOT / 'logdir'
 PATHS.OUTPUT = PATHS.DATA_ROOT / 'output'
 
 BATCH_SIZE = 1
-WORKERS_NB = 8
+WORKERS_NB = 0
 
 # prefer nvidia-docker selection
 # CUDA_VISIBLE_DEVICES = "1"

@@ -18,9 +18,13 @@ import src.utils.preprocess as ps
 
 
 def load_image(url):
-    r = requests.get(url, allow_redirects=True)
-    dfile = dicom.filebase.DicomBytesIO(r.content)
-    dcm = dicom.read_file(dfile)
+    path = os.path.join(config.PATHS.DATASET, url)
+    if os.path.isfile(path):
+        dcm = dicom.read_file(path)
+    else:
+        r = requests.get(url, allow_redirects=True)
+        dfile = dicom.filebase.DicomBytesIO(r.content)
+        dcm = dicom.read_file(dfile)
     try:
         spacing = np.array(dcm.PixelSpacing)
     except:
