@@ -68,7 +68,10 @@ RUN echo "source activate $(head -1 /opt/entrypoint/environment.yml | cut -d' ' 
 ENV PATH /opt/conda/envs/$(head -1 /opt/entrypoint/environment.yml | cut -d' ' -f2)/bin:$PATH
 
 ENV DEBIAN_FRONTEND teletype
+
+ARG REDIS_DB_V=8
 ENV REDIS_DB_V=$REDIS_DB_V
+
 ENV SERVING_LOG=/opt/entrypoint/logfile
 VOLUME /opt/entrypoint/dataset
 
