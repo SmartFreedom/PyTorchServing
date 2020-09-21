@@ -95,4 +95,4 @@ class ProbabilityClassifier():
     def __call__(self, response):
         feature_vector = pd.DataFrame([extract_features(response)])
         pred = self.classifier.predict_proba(feature_vector)
-        return pred[0, 1] # 0th sample & prob of 1st class
+        return float(pred[0, 1]) # 0th sample & prob of 1st class
