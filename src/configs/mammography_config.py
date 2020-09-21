@@ -8,7 +8,7 @@ import src.modules.learner as lrn
 from src.models.albunet import AlbuNet, getFPNAlbuNetSE
 from src.models.mass_segm_albunet import AlbuNet as AlbuNetHEAD
 from src.models.resnet import resnet34
-from src.models.regression_tree import ProbabilityRegressor
+from src.models.regression_tree import ProbabilityClassifier
 
 
 PARAMS = addict.Dict()
@@ -82,14 +82,14 @@ MODELS = {
         },
         'path': 'albunet34_fold_0_250thth_best.pth',
     },
-    'DecisionTreeRegressor': {
-        'model': ProbabilityRegressor,
+    'DecisionTreeClassifier': {
+        'model': ProbabilityClassifier,
         'type': 'sklearn',
         'transform': lambda x: np.rollaxis(x, -1, 0),
         'inference': lrn.InferenceMass,
         'fc': None,
         'kwargs': {},
-        'path': 'regr_decision_tree_model_l20_d7.pkl',
+        'path': 'XGBOOST.pkl',
     }
 }
 

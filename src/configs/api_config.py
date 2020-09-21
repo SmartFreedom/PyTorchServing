@@ -20,7 +20,7 @@ API.REDIS.START = 1
 API.KEYS = [ 
     'MammographyRoI', 'DensityEstimation', 
     'AsymmetryEstimation', 'MassSegmentation', 
-    'DecisionTreeRegressor', 
+    'DecisionTreeClassifier',
 ]
 
 open(os.environ['SERVING_LOG'], 'w').close()
