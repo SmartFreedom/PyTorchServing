@@ -89,7 +89,7 @@ MODELS = {
         'inference': lrn.InferenceMass,
         'fc': None,
         'kwargs': {},
-        'path': 'XGBOOST.pkl',
+        'path': 'XGBOOST.pth',
     }
 }
 
