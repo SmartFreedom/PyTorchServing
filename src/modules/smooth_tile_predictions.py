@@ -51,7 +51,7 @@ def _window_2D(window_size, power=2, verbose=False):
         wind = cached_2d_windows[key]
     else:
         wind = _spline_window(window_size, power)
-        wind = np.expand_dims(np.expand_dims(wind, 3), 3)
+        wind = np.expand_dims(np.expand_dims(wind, 1), 2)
         wind = wind * wind.transpose(1, 0, 2)
         if verbose:
             # For demo purpose, let's look once at the window:

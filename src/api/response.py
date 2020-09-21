@@ -69,30 +69,30 @@ def build_density_response(channel, threshold=.5, argmax=True):
     return density
 
 
-def build_cancer_prob_response(channel, manager):
+def build_cancer_prob_response(manager, response):
     cancer_prob = addict.Dict()
-    cancer_prob.response.value = get_cancer_dtr_response(channel, manager)
+    cancer_prob.response.value = get_cancer_xgb_response(manager, response)
     cancer_prob.key_value = True
     return cancer_prob
 
 
-def build_birads_response(channel, manager):
-    cancer_prob = addict.Dict()
-    value = get_cancer_dtr_response(channel, manager)
-    centroids = np.array(config.MAMMOGRAPHY_PARAMS.BIRADS_CENTROIDS)
+# def build_birads_response(channel, manager):
+#     cancer_prob = addict.Dict()
+#     value = get_cancer_dtr_response(channel, manager)
+#     centroids = np.array(config.MAMMOGRAPHY_PARAMS.BIRADS_CENTROIDS)
 
-    tmp = 'birads_{}'
-    birads = {}
-    values = np.exp((centroids - value)**2)
-    for i, v in enumerate(values):
-        birads[tmp.format(i + 1)] = v
-        birads[tmp.format(0)] = 0
+#     tmp = 'birads_{}'
+#     birads = {}
+#     values = np.exp((centroids - value)**2)
+#     for i, v in enumerate(values):
+#         birads[tmp.format(i + 1)] = v
+#         birads[tmp.format(0)] = 0
 
-    cancer_prob.response = birads
-    cancer_prob.default = 'birads_1',
-    cancer_prob.argmax = True,
-    cancer_prob.threshold = .5,
-    return cancer_prob
+#     cancer_prob.response = birads
+#     cancer_prob.default = 'birads_1',
+#     cancer_prob.argmax = True,
+#     cancer_prob.threshold = .5,
+#     return cancer_prob
 
 
 def build_distortions_response(channel, threshold=.5, argmax=True):
@@ -205,7 +205,7 @@ def build_calcifications_findings_response(channel, thresholds):
 
     return findings
 
-
+#DEPRECATED
 def get_cancer_dtr_response(channel, manager):
     masks = {
         'fpn': {},
@@ -221,6 +221,10 @@ def get_cancer_dtr_response(channel, manager):
             masks['head'][key] = [preds[i]]
 
     return manager.DecisionTreeRegressor.learner(masks)
+
+
+def get_cancer_xgb_response(manager, response):
+    return manager.DecisionTreeClassifier.learner(response)
 
 
 def get_rle_response_old(channel):
@@ -280,6 +284,7 @@ def map_attributes(positives, attributes):
     mapped = [ config.MAMMOGRAPHY_PARAMS.POSITIVE_MAPS[p] for p in positives ]
     mapped += [ config.MAMMOGRAPHY_PARAMS.POSITIVE_MAPS[n] for n in negatives ]
     return mapped
+
 
 def build_findings_rle_response(channel, thresholds):
     findings = list()
@@ -403,8 +408,7 @@ def build_response(channel, channel_id, manager, thresholds):
     response = addict.Dict()
     response.prediction = addict.Dict()
     response.prediction.density.update(build_density_response(channel))
-    response.prediction.cancer_prob.update(build_cancer_prob_response(channel, manager))
-    response.prediction.birads.update(build_birads_response(channel, manager))
+    # response.prediction.birads.update(build_birads_response(channel, manager))
 
     for key in ['r', 'l']:
         channel_ = { k: v for k, v in channel.items() if k[0] == key}
@@ -415,7 +419,6 @@ def build_response(channel, channel_id, manager, thresholds):
         calcifications_benign, calcifications_malignant = build_calcifications_response(channel_)
         response.prediction[key].calcifications_benign.update(calcifications_benign)
         response.prediction[key].calcifications_malignant.update(calcifications_malignant)
-        response.prediction[key].cancer_prob.update(build_cancer_prob_response(channel_, manager))
 
     response.paths = build_paths_response_tmp(channel, channel_id)
     response.findings = build_calcifications_findings_response(channel, thresholds)
@@ -436,5 +439,7 @@ def build_response(channel, channel_id, manager, thresholds):
         }
 
     response.roi = ['r', 'l']
+
+    response.prediction.cancer_prob.update(build_cancer_prob_response(manager, response))
 
     return response
