@@ -264,8 +264,12 @@ def inter_dice(a, b):
 
 
 def fit_ellipse(roi):
-    roi = roi ^ scipy.ndimage.binary_erosion(roi, iterations=5)
-    return cv2.fitEllipse(np.expand_dims(np.array(np.where(roi)).T, 1))
+    try:
+        roi_ = roi ^ scipy.ndimage.binary_erosion(roi, iterations=5)
+        return cv2.fitEllipse(np.expand_dims(np.array(np.where(roi_)).T, 1))
+    except:
+        centroid = np.array(np.where(roi)).mean(1).tolist()
+        return [ centroid, [.1, .1] ]
 
 def map_attributes(positives, attributes):
     negatives = list(set(
