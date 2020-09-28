@@ -291,7 +291,7 @@ def build_findings_rle_response(channel, thresholds):
     for side, el in channel.items():
         spatial_coeffs = np.array(
             el['original'].shape[-2:]) / np.array(el['head_predictions'].shape[-2:])
-        calcification = torch.tensor(el['fpn_predictions'][1:])
+        calcification = torch.tensor(el['fpn_predictions'][:1])
         calcification = F.max_pool2d(
             calcification, kernel_size=16, stride=16).data.numpy()[0]
 
@@ -335,6 +335,8 @@ def build_findings_rle_response(channel, thresholds):
 
             for idx, probs in response.items():
                 roi = response_mask == idx
+                coords = np.array(np.where(roi))
+                height, width = coords.max(1) - coords.min(1)
                 c_score = calcification[roi].max()
                 ellipse = fit_ellipse(roi)
                 phys_spacing = dict()
@@ -363,9 +365,14 @@ def build_findings_rle_response(channel, thresholds):
                     "geometry": {
                         "points": [
                         {
-                            "x": ellipse[0][0],
-                            "y": ellipse[0][1]
-                        }],
+                            "x": ellipse[0][1],
+                            "y": ellipse[0][0]
+                        },
+                        {
+                            "x": width,
+                            "y": height
+                        }
+                        ],
                         "rle": [{
                             "mask": rle.rle_encode(roi),
                             "width": roi.shape[1],
