@@ -335,8 +335,10 @@ def build_findings_rle_response(channel, thresholds):
 
             for idx, probs in response.items():
                 roi = response_mask == idx
-                coords = np.array(np.where(roi))
-                height, width = coords.max(1) - coords.min(1)
+                oroi = cv2.resize(
+                    roi.astype(np.uint8), el['original'].shape[::-1], 0)
+                coords = np.array(np.where(oroi))
+                maxs, mins = coords.max(1), coords.min(1)
                 c_score = calcification[roi].max()
                 ellipse = fit_ellipse(roi)
                 phys_spacing = dict()
@@ -358,6 +360,10 @@ def build_findings_rle_response(channel, thresholds):
                     })
                 except:
                     pass
+                shapes = np.array(el['original'].shape)
+                max_shape = shapes.max()
+                max_shape += (128 - max_shape % 128) * (max_shape % 128 != 0)
+                coeff = max_shape / max(roi.shape)
                 tmp = {
                     "key": '{}.{}'.format(side, idx),
                     "image": side,
@@ -369,8 +375,12 @@ def build_findings_rle_response(channel, thresholds):
                             "y": ellipse[0][0]
                         },
                         {
-                            "x": width,
-                            "y": height
+                            "x": int(mins[1]),
+                            "y": int(mins[0])
+                        },
+                        {
+                            "x": int(maxs[1]),
+                            "y": int(maxs[0])
                         }
                         ],
                         "rle": [{
