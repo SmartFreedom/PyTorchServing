@@ -117,7 +117,9 @@ def build_lymph_node_response(channel, threshold=.5, argmax=True):
     return lymph_node
 
 
-def build_calcifications_response(channel, threshold=.5, argmax=True):
+def build_calcifications_response(
+    channel, threshold=.5, mthreshold=.5, argmax=True):
+
     calcifications_benign = addict.Dict()
     calcifications_benign.response.yes = np.max([ 
         v['fpn_predictions'][0].max() for v in channel.values() ])
@@ -130,7 +132,7 @@ def build_calcifications_response(channel, threshold=.5, argmax=True):
     calcifications_malignant.response.yes = np.max([ 
         v['head_predictions'][3].max() for v in channel.values() ])
     calcifications_malignant.response.no = 1. - calcifications_malignant.response.yes
-    calcifications_malignant.threshold = threshold
+    calcifications_malignant.threshold = mthreshold
     calcifications_malignant.default = "no"
     calcifications_malignant.argmax = argmax
 
@@ -308,7 +310,7 @@ def build_findings_rle_response(channel, thresholds):
                 labeled, colours = scipy.ndimage.label(mask)
                 watershed = skimage.segmentation.watershed(
                     -pred, labeled, 
-                    mask=pred>config.THRESHOLDS_LOWER_BOUND['head'][i])
+                    mask=pred>min(thresholds[key], config.THRESHOLDS_LOWER_BOUND['head'][i]))
 
                 for c in range(1, colours + 1):
                     roin = watershed == c
@@ -430,10 +432,18 @@ def build_response(channel, channel_id, manager, thresholds):
     for key in ['r', 'l']:
         channel_ = { k: v for k, v in channel.items() if k[0] == key}
         response.prediction[key] = addict.Dict()
-        response.prediction[key].distortions.update(build_distortions_response(channel_))
-        response.prediction[key].lymph_node.update(build_lymph_node_response(channel_))
+        response.prediction[key].distortions.update(
+            build_distortions_response(channel_), 
+            threshold=thresholds['local_structure_perturbation'])
+        response.prediction[key].lymph_node.update(
+            build_lymph_node_response(channel_), 
+            threshold=thresholds['intramammary_lymph_node'])
         response.prediction[key].mass.update(build_mass_response(channel_))
-        calcifications_benign, calcifications_malignant = build_calcifications_response(channel_)
+        calcifications_benign, calcifications_malignant = build_calcifications_response(
+            channel_,
+            threshold=thresholds['calcification'],
+            mthreshold=thresholds['malignancy'],
+        )
         response.prediction[key].calcifications_benign.update(calcifications_benign)
         response.prediction[key].calcifications_malignant.update(calcifications_malignant)
 

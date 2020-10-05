@@ -20,6 +20,19 @@ PARAMS.INNER_STD = [0.13130028764906437]
 
 PARAMS.BIRADS_CENTROIDS = [0.1, 0.35, 0.65, 0.85]
 
+PARAMS.DEFAULT_THRESHOLDS = {
+    'radiant_node': .5,
+    'intramammary_lymph_node': .12,
+    'calcification': .5,
+    'mask': .5,
+    'structure': .5,
+    'border': .5,
+    'shape': .5,
+    'malignancy': .5,
+    'calcification_malignant': .5,
+    'local_structure_perturbation': .5,
+}
+
 MODELS = {
     'MammographyRoI': {
         'model': AlbuNet,

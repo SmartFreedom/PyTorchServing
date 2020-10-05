@@ -31,7 +31,10 @@ def load_image(url):
     try:
         spacing = np.array(dcm.PixelSpacing)
     except:
-        spacing = None
+        try:
+            spacing = np.array(dcm.ImagerPixelSpacing)
+        except:
+            spacing = None
     return dcm.pixel_array, spacing
 
 
@@ -80,7 +83,8 @@ class QueueManager(easydict.EasyDict):
             thresholds = { 
                 k: data['data']['thresholds'][k] 
                 if 'thresholds' in data['data'] 
-                and k in data['data']['thresholds'] else .5 
+                and k in data['data']['thresholds'] 
+                else config.MAMMOGRAPHY_PARAMS.DEFAULT_THRESHOLDS[k] 
                 for k in [
                     'radiant_node',
                     'intramammary_lymph_node',
