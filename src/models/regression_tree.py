@@ -77,9 +77,9 @@ def extract_features(v):
     for el in v['findings']:
         findings[el['type']].append(el['geometry'])
 
-    for name in attributes + ['mass']:
+    # for name in attributes + ['mass']:
         # data['area|sum|{}'.format(name)] = sum(findings[name])
-        data['amount|{}'.format(name)] = len(findings[name])
+        # data['amount|{}'.format(name)] = len(findings[name])
         # data['area|max|{}'.format(name)] = max(findings[name] + [0])
 
     data['density'] = v['prediction']['density']['response']['ab']
