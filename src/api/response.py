@@ -469,4 +469,6 @@ def build_response(channel, channel_id, manager, thresholds):
 
     response.prediction.cancer_prob.update(build_cancer_prob_response(manager, response))
 
+    if not len({'mass', 'distortions'}.intersection([ f['type'] for f in response['findings'] ])):
+        response['prediction']['cancer_prob']['response']['value'] =  min(response['prediction']['cancer_prob']['response']['value'], .05)
     return response
