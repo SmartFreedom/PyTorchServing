@@ -363,9 +363,9 @@ def build_findings_rle_response(channel, thresholds):
                 except:
                     pass
                 shapes = np.array(el['original'].shape)
-                max_shape = shapes.max()
-                max_shape += (128 - max_shape % 128) * (max_shape % 128 != 0)
-                coeff = max_shape / max(roi.shape)
+                # max_shape = shapes.max()
+                # max_shape += (128 - max_shape % 128) * (max_shape % 128 != 0)
+                coeff = shapes / np.array(roi.shape)
                 tmp = {
                     "key": '{}.{}'.format(side, idx),
                     "image": side,
@@ -373,8 +373,8 @@ def build_findings_rle_response(channel, thresholds):
                     "geometry": {
                         "points": [
                         {
-                            "x": ellipse[0][1],
-                            "y": ellipse[0][0]
+                            "x": ellipse[0][1] * coeff[1],
+                            "y": ellipse[0][0] * coeff[0]
                         },
                         {
                             "x": int(mins[1]),
