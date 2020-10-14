@@ -48,14 +48,14 @@ def build_mass_response(channel, threshold=.5, argmax=True):
         v['head_predictions'][2].max() for v in channel.values() ])
     mass.response.with_calc = np.max([ 
         v['fpn_predictions'][0].max() for v in channel.values() ])
-    mass.response.no = 1. - max(mass.response.values())
+    # mass.response.no = 1. - max(mass.response.values())
     mass.response.homogen = 1. - mass.response.inhomogen
     mass.response.circ_margin = 1. - mass.response.obscure_margin
     mass.response.regular_shape = 1. - mass.response.irregular_shape
     mass.response.without_calc = 1. - mass.response.with_calc
     mass.default = "no"
     mass.threshold = threshold
-    mass.argmax = argmax
+    # mass.argmax = argmax
     return mass
 
 
@@ -99,10 +99,10 @@ def build_distortions_response(channel, threshold=.5, argmax=True):
     distortions = addict.Dict()
     distortions.response.yes = np.max([ 
         v['head_predictions'][4].max() for v in channel.values() ])
-    distortions.response.no = 1. - distortions.response.yes
+    # distortions.response.no = 1. - distortions.response.yes
     distortions.threshold = threshold
     distortions.default = "no"
-    distortions.argmax = argmax
+    # distortions.argmax = argmax
     return distortions
 
 
@@ -110,10 +110,10 @@ def build_lymph_node_response(channel, threshold=.5, argmax=True):
     lymph_node = addict.Dict()
     lymph_node.response.yes = np.max([ 
         v['head_predictions'][6].max() for v in channel.values() ])
-    lymph_node.response.no = 1. - lymph_node.response.yes
+    # lymph_node.response.no = 1. - lymph_node.response.yes
     lymph_node.threshold = threshold
     lymph_node.default = "no"
-    lymph_node.argmax = argmax
+    # lymph_node.argmax = argmax
     return lymph_node
 
 
@@ -123,18 +123,18 @@ def build_calcifications_response(
     calcifications_benign = addict.Dict()
     calcifications_benign.response.yes = np.max([ 
         v['fpn_predictions'][0].max() for v in channel.values() ])
-    calcifications_benign.response.no = 1. - calcifications_benign.response.yes
+    # calcifications_benign.response.no = 1. - calcifications_benign.response.yes
     calcifications_benign.threshold = threshold
     calcifications_benign.default = "no"
-    calcifications_benign.argmax = argmax
+    # calcifications_benign.argmax = argmax
 
     calcifications_malignant = addict.Dict()    
     calcifications_malignant.response.yes = np.max([ 
         v['head_predictions'][3].max() for v in channel.values() ])
-    calcifications_malignant.response.no = 1. - calcifications_malignant.response.yes
+    # calcifications_malignant.response.no = 1. - calcifications_malignant.response.yes
     calcifications_malignant.threshold = mthreshold
     calcifications_malignant.default = "no"
-    calcifications_malignant.argmax = argmax
+    # calcifications_malignant.argmax = argmax
 
     return calcifications_benign, calcifications_malignant
 
