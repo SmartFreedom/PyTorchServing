@@ -38,7 +38,7 @@ def build_rle_findings(pred, threshold, lower_bound, key, side):
     return response
 
 
-def build_mass_response(channel, threshold=.5, argmax=True):
+def build_mass_response(channel, thresholds=.5, argmax=True):
     mass = addict.Dict()
     mass.response.inhomogen =  np.max([ 
         v['head_predictions'][0].max() for v in channel.values() ])
@@ -54,7 +54,17 @@ def build_mass_response(channel, threshold=.5, argmax=True):
     mass.response.regular_shape = 1. - mass.response.irregular_shape
     mass.response.without_calc = 1. - mass.response.with_calc
     mass.default = "no"
-    mass.threshold = threshold
+    mass.threshold = {
+        'inhomogen': thresholds['structure'],
+        'obscure_margin': thresholds['border'],
+        'irregular_shape': thresholds['shape'],
+        'with_calc': thresholds['calcification'],
+
+        'homogen': 1 - thresholds['structure'],
+        'circ_margin': 1 - thresholds['border'],
+        'regular_shape': 1 - thresholds['shape'],
+        'without_calc': 1 - thresholds['calcification'],
+    }
     # mass.argmax = argmax
     return mass
 
@@ -438,7 +448,8 @@ def build_response(channel, channel_id, manager, thresholds):
         response.prediction[key].lymph_node.update(
             build_lymph_node_response(channel_), 
             threshold=thresholds['intramammary_lymph_node'])
-        response.prediction[key].mass.update(build_mass_response(channel_))
+        response.prediction[key].mass.update(
+            build_mass_response(channel_, thresholds))
         calcifications_benign, calcifications_malignant = build_calcifications_response(
             channel_,
             threshold=thresholds['calcification'],
