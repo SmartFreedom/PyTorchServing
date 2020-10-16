@@ -38,7 +38,7 @@ def build_rle_findings(pred, threshold, lower_bound, key, side):
     return response
 
 
-def build_mass_response(channel, thresholds=.5, argmax=True):
+def build_mass_response(channel, thresholds=.5, argmax=True, mass_findings=[]):
     mass = addict.Dict()
     mass.response.inhomogen =  np.max([ 
         v['head_predictions'][0].max() for v in channel.values() ])
@@ -48,7 +48,7 @@ def build_mass_response(channel, thresholds=.5, argmax=True):
         v['head_predictions'][2].max() for v in channel.values() ])
     mass.response.with_calc = np.max([ 
         v['fpn_predictions'][0].max() for v in channel.values() ])
-    # mass.response.no = 1. - max(mass.response.values())
+    mass.response.no = 1. - max(mass.response.values())
     mass.response.homogen = 1. - mass.response.inhomogen
     mass.response.circ_margin = 1. - mass.response.obscure_margin
     mass.response.regular_shape = 1. - mass.response.irregular_shape
@@ -64,6 +64,8 @@ def build_mass_response(channel, thresholds=.5, argmax=True):
         'circ_margin': 1 - thresholds['border'],
         'regular_shape': 1 - thresholds['shape'],
         'without_calc': 1 - thresholds['calcification'],
+
+        'no': (len(mass_findings) > 0) * 1.
     }
     # mass.argmax = argmax
     return mass
@@ -202,6 +204,7 @@ def build_calcifications_findings_response(channel, thresholds):
                 "key": i,
                 "scores": {},
                 "image": side,
+                "roi": side[0],
                 "type": 'calcification',
                 "prob": row.probability,
                 "geometry": {
@@ -439,6 +442,10 @@ def build_response(channel, channel_id, manager, thresholds):
     response.prediction.density.update(build_density_response(channel))
     # response.prediction.birads.update(build_birads_response(channel, manager))
 
+    response.paths = build_paths_response_tmp(channel, channel_id)
+    response.findings = build_calcifications_findings_response(channel, thresholds)
+    response.findings.extend(build_findings_rle_response(channel, thresholds))
+    
     for key in ['r', 'l']:
         channel_ = { k: v for k, v in channel.items() if k[0] == key}
         response.prediction[key] = addict.Dict()
@@ -448,19 +455,19 @@ def build_response(channel, channel_id, manager, thresholds):
         response.prediction[key].lymph_node.update(
             build_lymph_node_response(channel_), 
             threshold=thresholds['intramammary_lymph_node'])
+        mass = [
+            f for f in response.findings 
+            if f['roi'] == key and f['type'] == 'mass']
         response.prediction[key].mass.update(
-            build_mass_response(channel_, thresholds))
+            build_mass_response(channel_, thresholds, mass_findings=mass))
         calcifications_benign, calcifications_malignant = build_calcifications_response(
             channel_,
             threshold=thresholds['calcification'],
             mthreshold=thresholds['malignancy'],
         )
         response.prediction[key].calcifications_benign.update(calcifications_benign)
-        response.prediction[key].calcifications_malignant.update(calcifications_malignant)
-
-    response.paths = build_paths_response_tmp(channel, channel_id)
-    response.findings = build_calcifications_findings_response(channel, thresholds)
-    response.findings.extend(build_findings_rle_response(channel, thresholds))
+        response.prediction[key].calcifications_malignant.update(
+            calcifications_malignant)
 
     response.prediction.asymmetry = {
             "response":
@@ -482,4 +489,5 @@ def build_response(channel, channel_id, manager, thresholds):
 
     if not len({'mass', 'distortions'}.intersection([ f['type'] for f in response['findings'] ])):
         response['prediction']['cancer_prob']['response']['value'] =  min(response['prediction']['cancer_prob']['response']['value'], .05)
+    
     return response
