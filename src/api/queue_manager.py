@@ -196,6 +196,7 @@ class QueueManager(easydict.EasyDict):
                     if q['side'] == side and q['channel'] == c
                 ].pop()
             response = rs.build_response(channel, c, self, thresholds=channels[c])
+            print(response)
             self.r_api.publish(c.split('.')[-1], response)
 
 
